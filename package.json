@@ -1,0 +1,42 @@
+{
+  "name": "reposcout",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "pages:build": "opennextjs-cloudflare build",
+    "deploy": "npm run pages:build && wrangler deploy --config wrangler.jsonc",
+    "deploy:scan": "wrangler deploy --config wrangler.scan.toml",
+    "db:migrate": "wrangler d1 execute reposcout --file=migrations/schema.sql",
+    "db:migrate:remote": "wrangler d1 execute reposcout --remote --file=migrations/schema.sql"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.38",
+    "@langchain/langgraph": "^0.2.45",
+    "@opennextjs/cloudflare": "^1.19.10",
+    "clsx": "^2.1.1",
+    "fflate": "^0.8.2",
+    "framer-motion": "^11.18.2",
+    "lucide-react": "^1.16.0",
+    "next": "16.2.6",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "tailwind-merge": "^2.4.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241022.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.30",
+    "@types/react-dom": "^18.3.7",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.19",
+    "tsx": "^4.22.3",
+    "typescript": "^5.8.2",
+    "wrangler": "^4.86.0"
+  }
+}

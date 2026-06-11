@@ -1,0 +1,25 @@
+name = "reposcout-scan-worker"
+account_id = "b1dea8ea21722d03763e3eff6ab8c5c1"
+main = "src/scan-worker/index.ts"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[triggers]
+crons = ["0 * * * *"]  # Runs every hour at :00 UTC
+
+[[d1_databases]]
+binding = "DB"
+database_name = "reposcout"
+database_id = "67fa825b-9f3e-478c-99d2-3e5cc1b0f3de"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "ed3c323de9cc48a4b332beec939597a4"
+
+[ai]
+binding = "AI"
+
+[vars]
+SUMMARY_MODEL    = "@cf/meta/llama-3.1-8b-instruct"
+SCAN_MAX_CONCURRENT_REPOS = "3"
