@@ -1,77 +1,86 @@
--- schema.sql
--- RepoScout Cloudflare D1 Database Schema
+-- migrations/schema.sql
+-- RepoScout D1 schema — aligned with SPECIFICATION.md
 
--- Repositories monitored by the scanner
+-- Monitored repositories
 CREATE TABLE IF NOT EXISTS repositories (
-  id TEXT PRIMARY KEY,
-  owner TEXT NOT NULL,
-  name TEXT NOT NULL,
-  url TEXT NOT NULL,
-  risk_score REAL DEFAULT 0.0,
-  high_severity_findings INTEGER DEFAULT 0,
+  id                         TEXT PRIMARY KEY,
+  owner                      TEXT NOT NULL,
+  name                       TEXT NOT NULL,
+  url                        TEXT NOT NULL,
+  risk_score                 REAL    DEFAULT 0.0,
+  high_severity_findings     INTEGER DEFAULT 0,
   critical_severity_findings INTEGER DEFAULT 0,
-  last_scan_at TEXT,
-  last_scan_status TEXT DEFAULT 'PENDING',
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
+  last_scan_at               TEXT,
+  last_scan_status           TEXT    DEFAULT 'PENDING',
+  created_at                 TEXT    DEFAULT (datetime('now')),
+  updated_at                 TEXT    DEFAULT (datetime('now'))
 );
 
--- Scan execution logs
+-- Scan execution log
 CREATE TABLE IF NOT EXISTS scan_runs (
-  id TEXT PRIMARY KEY,
-  started_at TEXT NOT NULL,
-  completed_at TEXT,
-  total_repos_scanned INTEGER DEFAULT 0,
-  total_findings INTEGER DEFAULT 0,
-  status TEXT NOT NULL -- 'RUNNING', 'COMPLETED', 'FAILED'
+  id                   TEXT PRIMARY KEY,
+  started_at           TEXT NOT NULL,
+  completed_at         TEXT,
+  total_repos_scanned  INTEGER DEFAULT 0,
+  total_findings       INTEGER DEFAULT 0,
+  true_positives       INTEGER DEFAULT 0,
+  needs_human_review   INTEGER DEFAULT 0,
+  false_positives      INTEGER DEFAULT 0,
+  status               TEXT NOT NULL  -- 'RUNNING' | 'COMPLETED' | 'FAILED'
 );
 
--- Secret scanner findings
+-- Individual secret findings
 CREATE TABLE IF NOT EXISTS findings (
-  id TEXT PRIMARY KEY,
-  scan_run_id TEXT NOT NULL,
-  repo_id TEXT NOT NULL,
-  file_path TEXT NOT NULL,
-  file_url TEXT NOT NULL,
-  line_number INTEGER NOT NULL,
-  matched_text TEXT NOT NULL, -- Masked for display: e.g. ghp_xxxx...xxxx
-  line_content TEXT NOT NULL, -- The matching line of code
-  context TEXT NOT NULL, -- Surrounding 5 lines above/below for UI rendering and AI check
-  pattern_id TEXT NOT NULL,
-  template_id TEXT NOT NULL,
-  severity TEXT NOT NULL, -- 'info', 'low', 'medium', 'high', 'critical'
-  detected_at TEXT DEFAULT (datetime('now')),
+  id           TEXT PRIMARY KEY,
+  scan_run_id  TEXT NOT NULL,
+  repo_id      TEXT NOT NULL,
+  file_path    TEXT NOT NULL,
+  file_url     TEXT NOT NULL,
+  line_number  INTEGER NOT NULL,
+  matched_text TEXT NOT NULL,  -- masked: ghp_xxxx...xxxx
+  line_content TEXT NOT NULL,
+  context      TEXT NOT NULL,  -- 5 lines above/below as JSON array
+  pattern_id   TEXT NOT NULL,
+  template_id  TEXT NOT NULL,
+  severity     TEXT NOT NULL,  -- 'info'|'low'|'medium'|'high'|'critical'
+  detected_at  TEXT DEFAULT (datetime('now')),
   FOREIGN KEY(scan_run_id) REFERENCES scan_runs(id) ON DELETE CASCADE,
-  FOREIGN KEY(repo_id) REFERENCES repositories(id) ON DELETE CASCADE
+  FOREIGN KEY(repo_id)     REFERENCES repositories(id) ON DELETE CASCADE
 );
 
--- AI analysis and external check validation outcomes
+-- AI evaluation results
 CREATE TABLE IF NOT EXISTS ai_evaluations (
-  id TEXT PRIMARY KEY,
-  finding_id TEXT NOT NULL UNIQUE,
-  classification TEXT NOT NULL, -- 'TRUE_POSITIVE', 'FALSE_POSITIVE', 'SUSPICIOUS'
-  confidence REAL NOT NULL, -- 0.0 to 1.0
-  validation_method TEXT NOT NULL, -- 'active_api_test', 'llm_heuristics', 'pattern'
-  validation_status TEXT NOT NULL, -- 'ACTIVE', 'REVOKED', 'UNVERIFIABLE', 'FALSE_POSITIVE'
-  reasoning TEXT NOT NULL,
-  external_response TEXT, -- Masked API response (status, headers, or safe body snippets)
-  evaluated_at TEXT DEFAULT (datetime('now')),
+  id                TEXT PRIMARY KEY,
+  finding_id        TEXT NOT NULL UNIQUE,
+  verdict           TEXT NOT NULL,  -- 'TRUE_POSITIVE'|'FALSE_POSITIVE'|'NEEDS_HUMAN_REVIEW'
+  confidence        REAL NOT NULL,
+  validation_method TEXT NOT NULL,  -- 'api_test'|'llm'|'heuristic'
+  validation_status TEXT NOT NULL,  -- 'ACTIVE'|'REVOKED'|'UNVERIFIABLE'|'FALSE_POSITIVE'
+  reasoning         TEXT NOT NULL,
+  external_response TEXT,           -- masked API response snippet
+  evaluated_at      TEXT DEFAULT (datetime('now')),
+  analyst_reviewed  INTEGER DEFAULT 0,  -- 1 once a human triaged it
+  analyst_verdict   TEXT,               -- human override if different from AI
   FOREIGN KEY(finding_id) REFERENCES findings(id) ON DELETE CASCADE
 );
 
--- Github PAT rotation pool
+-- GitHub PAT rotation pool (up to 10 tokens)
 CREATE TABLE IF NOT EXISTS scan_tokens (
-  id TEXT PRIMARY KEY,
-  token_hash TEXT NOT NULL UNIQUE,
-  masked_token TEXT NOT NULL,
-  is_active INTEGER DEFAULT 1,
+  id                   TEXT PRIMARY KEY,
+  token_hash           TEXT NOT NULL UNIQUE,  -- SHA-256 of raw PAT
+  masked_token         TEXT NOT NULL,          -- e.g. ghp_xxxx...1234
+  is_active            INTEGER DEFAULT 1,
   rate_limit_remaining INTEGER DEFAULT 5000,
-  rate_limit_reset TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
+  rate_limit_reset     TEXT,                   -- ISO-8601 datetime
+  last_used_at         TEXT,
+  created_at           TEXT DEFAULT (datetime('now'))
 );
 
--- Indexes to optimize queries on repository risk lists and latest scans
-CREATE INDEX IF NOT EXISTS idx_repositories_risk ON repositories(risk_score DESC);
-CREATE INDEX IF NOT EXISTS idx_findings_repo ON findings(repo_id);
-CREATE INDEX IF NOT EXISTS idx_findings_scan_run ON findings(scan_run_id);
-CREATE INDEX IF NOT EXISTS idx_ai_evaluations_classification ON ai_evaluations(classification);
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_repositories_risk      ON repositories(risk_score DESC);
+CREATE INDEX IF NOT EXISTS idx_findings_repo           ON findings(repo_id);
+CREATE INDEX IF NOT EXISTS idx_findings_scan_run       ON findings(scan_run_id);
+CREATE INDEX IF NOT EXISTS idx_findings_severity       ON findings(severity);
+CREATE INDEX IF NOT EXISTS idx_evaluations_verdict     ON ai_evaluations(verdict);
+CREATE INDEX IF NOT EXISTS idx_evaluations_reviewed    ON ai_evaluations(analyst_reviewed);
+CREATE INDEX IF NOT EXISTS idx_tokens_active           ON scan_tokens(is_active, rate_limit_remaining DESC);

@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base (ported from ArxivExplorer, adapted for RepoScout) ─────────────── */
+
+:root {
+  --neon-green:     #00ff41;
+  --neon-green-40:  rgba(0, 255, 65, 0.40);
+  --neon-green-10:  rgba(0, 255, 65, 0.10);
+  --neon-red:       #ff4141;
+  --neon-amber:     #ffaa00;
+  --dark-bg:        #0a0a0a;
+  --card-bg:        rgba(10, 10, 10, 0.60);
+}
+
+* { box-sizing: border-box; padding: 0; margin: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--dark-bg);
+  color: #e5e5e5;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: rgba(0, 255, 65, 0.35); color: #fff; }
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: var(--dark-bg); }
+::-webkit-scrollbar-thumb  { background: rgba(0, 255, 65, 0.30); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 255, 65, 0.60); }
+
+/* ─── Scroll-progress bar ─────────────────────────────────────────────────── */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, rgba(0,255,65,0.3) 0%, #00ff41 50%, rgba(0,255,65,0.3) 100%);
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.6), 0 0 20px rgba(0, 255, 65, 0.2);
+  transform-origin: left; z-index: 9999; pointer-events: none;
+}
+
+/* ─── Grid background ─────────────────────────────────────────────────────── */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(0, 255, 65, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ─── Glow effects ────────────────────────────────────────────────────────── */
+.glow-green { box-shadow: 0 0 20px rgba(0, 255, 65, 0.15), 0 0 60px rgba(0, 255, 65, 0.05); }
+.glow-red   { box-shadow: 0 0 20px rgba(255, 65, 65, 0.20), 0 0 60px rgba(255, 65, 65, 0.08); }
+.glow-amber { box-shadow: 0 0 20px rgba(255, 170, 0, 0.20), 0 0 60px rgba(255, 170, 0, 0.08); }
+
+.text-glow-green { text-shadow: 0 0 20px rgba(0, 255, 65, 0.60); }
+.text-glow-red   { text-shadow: 0 0 20px rgba(255, 65, 65, 0.70); }
+.text-glow-amber { text-shadow: 0 0 20px rgba(255, 170, 0, 0.70); }
+
+/* ─── Badge ───────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; padding: 2px 8px;
+  border-radius: 4px; font-size: 0.65rem; font-weight: 600;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  border: 1px solid rgba(0, 255, 65, 0.25);
+  color: rgba(0, 255, 65, 0.80); background: rgba(0, 255, 65, 0.06);
+}
+.badge-red   { border-color: rgba(255,65,65,0.30); color: rgba(255,65,65,0.90); background: rgba(255,65,65,0.08); }
+.badge-amber { border-color: rgba(255,170,0,0.30); color: rgba(255,170,0,0.90); background: rgba(255,170,0,0.08); }
