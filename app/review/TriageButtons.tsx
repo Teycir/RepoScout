@@ -1,9 +1,10 @@
 'use client';
 // app/review/TriageButtons.tsx
 // Client component: one-click triage buttons that POST to /api/review.
-// Optimistically shows confirmation state on success.
+// Optimistically shows confirmation state on success, then refreshes the queue.
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 type TriageVerdict = 'TRUE_POSITIVE' | 'FALSE_POSITIVE';
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function TriageButtons({ evalId, findingId }: Props) {
+  const router = useRouter();
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [chosen, setChosen] = useState<TriageVerdict | null>(null);
 
@@ -29,6 +31,8 @@ export function TriageButtons({ evalId, findingId }: Props) {
       });
       if (!res.ok) throw new Error(await res.text());
       setState('done');
+      // Refresh the server component so the triaged card drops off the queue.
+      router.refresh();
     } catch (err) {
       console.error('[triage]', err);
       setState('error');

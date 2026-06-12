@@ -1,10 +1,11 @@
 // src/scan-worker/index.ts
 // Cloudflare Worker entry — fetch (manual trigger) + scheduled (hourly cron).
 
-import type { Env, Template } from '../lib/types.js';
-import { scanRepo, pickNextToken, recordTokenUsage } from './scanner.js';
-import { createScanValidationGraph, persistEvaluation } from './pipeline.js';
-import templates from './patterns.json';
+import type { Env, Template } from "../lib/types.js";
+import { scanRepo, pickNextToken, recordTokenUsage } from "./scanner.js";
+import { createScanValidationGraph, persistEvaluation } from "./pipeline.js";
+import { recalculateRepoMetrics } from "../../lib/db.js";
+import templates from "./patterns.json";
 
 const COMPILED_TEMPLATES = templates as Template[];
 const MAX_CONCURRENT_REPOS = 3;
@@ -57,10 +58,15 @@ async function getNextToken(
 // Main scan loop
 // ---------------------------------------------------------------------------
 
-async function runScan(env: Env & Record<string, string>, repoId?: string): Promise<void> {
+async function runScan(
+  env: Env & Record<string, string>,
+  repoId?: string,
+): Promise<void> {
   const rawTokens = getRawTokens(env);
   if (rawTokens.length === 0) {
-    console.error('[scan-worker] No GITHUB_TOKEN_* secrets found — aborting scan');
+    console.error(
+      "[scan-worker] No GITHUB_TOKEN_* secrets found — aborting scan",
+    );
     return;
   }
 
@@ -68,42 +74,53 @@ async function runScan(env: Env & Record<string, string>, repoId?: string): Prom
   const query = repoId
     ? env.DB.prepare(
         `SELECT id, owner, name, url, last_scan_at FROM repositories
-         WHERE id = ? AND last_scan_status != 'RUNNING'`
+         WHERE id = ? AND last_scan_status != 'RUNNING'`,
       ).bind(repoId)
     : env.DB.prepare(
         `SELECT id, owner, name, url, last_scan_at FROM repositories
          WHERE last_scan_status != 'RUNNING'
          ORDER BY last_scan_at ASC NULLS FIRST
-         LIMIT ?`
+         LIMIT ?`,
       ).bind(MAX_CONCURRENT_REPOS);
 
   const { results: repos } = await query.all<{
-    id: string; owner: string; name: string; url: string; last_scan_at: string | null
+    id: string;
+    owner: string;
+    name: string;
+    url: string;
+    last_scan_at: string | null;
   }>();
 
   if (repos.length === 0) {
-    console.log('[scan-worker] No repos to scan');
+    console.log("[scan-worker] No repos to scan");
     return;
   }
 
   // Create scan run record
   const scanRunId = crypto.randomUUID();
-  await env.DB
-    .prepare(
-      `INSERT INTO scan_runs (id, started_at, status) VALUES (?, datetime('now'), 'RUNNING')`
-    )
+  await env.DB.prepare(
+    `INSERT INTO scan_runs (id, started_at, status) VALUES (?, datetime('now'), 'RUNNING')`,
+  )
     .bind(scanRunId)
     .run();
 
-  let totalFindings = 0, truePositives = 0, needsReview = 0, falsePositives = 0;
+  let totalFindings = 0,
+    truePositives = 0,
+    needsReview = 0,
+    falsePositives = 0;
 
-  const pipeline = createScanValidationGraph({ DB: env.DB, CACHE: env.CACHE, AI: env.AI });
+  const pipeline = createScanValidationGraph({
+    DB: env.DB,
+    CACHE: env.CACHE,
+    AI: env.AI,
+  });
 
   // Scan each repo sequentially (Workers CPU budget)
   for (const repo of repos) {
     // Mark repo as scanning
-    await env.DB
-      .prepare(`UPDATE repositories SET last_scan_status = 'RUNNING' WHERE id = ?`)
+    await env.DB.prepare(
+      `UPDATE repositories SET last_scan_status = 'RUNNING' WHERE id = ?`,
+    )
       .bind(repo.id)
       .run();
 
@@ -112,110 +129,129 @@ async function runScan(env: Env & Record<string, string>, repoId?: string): Prom
     console.log(`[scan-worker] Scanning ${repo.owner}/${repo.name}`);
 
     const { matches, filesScanned, errors, rateLimit } = await scanRepo(
-      repo.owner, repo.name, token, COMPILED_TEMPLATES,
+      repo.owner,
+      repo.name,
+      token,
+      COMPILED_TEMPLATES,
     );
 
     if (errors.length > 0) {
-      console.warn(`[scan-worker] ${errors.length} errors in ${repo.owner}/${repo.name}:`, errors.slice(0, 3));
+      console.warn(
+        `[scan-worker] ${errors.length} errors in ${repo.owner}/${repo.name}:`,
+        errors.slice(0, 3),
+      );
     }
 
-    console.log(`[scan-worker] ${repo.owner}/${repo.name}: ${matches.length} matches in ${filesScanned} files`);
+    console.log(
+      `[scan-worker] ${repo.owner}/${repo.name}: ${matches.length} matches in ${filesScanned} files`,
+    );
     totalFindings += matches.length;
 
     // Sync rate-limit headers back to D1 so the token pool stays accurate
     if (tokenId) {
       try {
-        await recordTokenUsage(env.DB, tokenId, rateLimit.remaining, rateLimit.resetIso);
-      } catch { /* non-critical */ }
+        await recordTokenUsage(
+          env.DB,
+          tokenId,
+          rateLimit.remaining,
+          rateLimit.resetIso,
+        );
+      } catch {
+        /* non-critical */
+      }
     }
-
-    let repoRiskScore = 0;
-    let highCount = 0, criticalCount = 0;
 
     // Persist each match + run through pipeline
     for (const match of matches) {
       const findingId = crypto.randomUUID();
       const fileUrl = `https://github.com/${repo.owner}/${repo.name}/blob/HEAD/${match.filePath}#L${match.lineNumber}`;
 
-      // Persist finding
-      await env.DB
-        .prepare(
-          `INSERT OR IGNORE INTO findings
+      // Persist finding — use ON CONFLICT DO UPDATE to ensure we don't duplicate rows
+      // and we refresh scan_run_id and detected_at, returning the persistent/active finding ID.
+      const row = await env.DB.prepare(
+        `INSERT INTO findings
              (id, scan_run_id, repo_id, file_path, file_url, line_number, matched_text,
               line_content, context, pattern_id, template_id, severity)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        )
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(repo_id, file_path, line_number, pattern_id, matched_text)
+           DO UPDATE SET
+             scan_run_id = excluded.scan_run_id,
+             detected_at = excluded.detected_at
+           RETURNING id`,
+      )
         .bind(
-          findingId, scanRunId, repo.id,
-          match.filePath, fileUrl, match.lineNumber,
-          match.matchedText,                              // already masked
-          match.context.split('\n')[0] ?? '',
-          JSON.stringify(match.context.split('\n')),
-          match.patternId, match.templateId, match.severity,
+          findingId,
+          scanRunId,
+          repo.id,
+          match.filePath,
+          fileUrl,
+          match.lineNumber,
+          match.matchedText, // already masked
+          match.context.split("\n")[0] ?? "",
+          JSON.stringify(match.context.split("\n")),
+          match.patternId,
+          match.templateId,
+          match.severity,
         )
-        .run();
+        .first<{ id: string }>();
+
+      const activeFindingId = row?.id ?? findingId;
 
       // Run LangGraph pipeline
       const finalState = await pipeline.invoke({
-        findingId,
-        repoName:               `${repo.owner}/${repo.name}`,
-        filePath:               match.filePath,
-        lineNumber:             match.lineNumber,
-        matchedText:            match.matchedText,
-        rawMatchedText:         match.rawMatchedText,
-        lineContent:            match.context.split('\n')[0] ?? '',
-        surroundingContext:     match.context,
-        patternId:              match.patternId,
-        templateId:             match.templateId,
-        severity:               match.severity,
+        findingId: activeFindingId,
+        repoName: `${repo.owner}/${repo.name}`,
+        filePath: match.filePath,
+        lineNumber: match.lineNumber,
+        matchedText: match.matchedText,
+        rawMatchedText: match.rawMatchedText,
+        lineContent: match.context.split("\n")[0] ?? "",
+        surroundingContext: match.context,
+        patternId: match.patternId,
+        templateId: match.templateId,
+        severity: match.severity,
         isHeuristicPlaceholder: false,
-        validationStatus:       'UNVERIFIABLE' as const,
-        verdict:                'NEEDS_HUMAN_REVIEW' as const,
-        aiReasoning:            '',
-        confidenceScore:        0,
-        riskScore:              0,
-        validationMethod:       'heuristic' as const,
+        validationStatus: "UNVERIFIABLE" as const,
+        verdict: "NEEDS_HUMAN_REVIEW" as const,
+        aiReasoning: "",
+        confidenceScore: 0,
+        riskScore: 0,
+        validationMethod: "heuristic" as const,
       });
 
       // Persist evaluation
       await persistEvaluation(env.DB, {
-        findingId,
-        verdict:          finalState.verdict,
-        confidence:       finalState.confidenceScore,
+        findingId: activeFindingId,
+        verdict: finalState.verdict,
+        confidence: finalState.confidenceScore,
         validationMethod: finalState.validationMethod,
-        validationStatus: finalState.validationStatus ?? 'UNVERIFIABLE',
-        reasoning:        finalState.aiReasoning,
-        riskScore:        finalState.riskScore,
+        validationStatus: finalState.validationStatus ?? "UNVERIFIABLE",
+        reasoning: finalState.aiReasoning,
+        riskScore: finalState.riskScore,
       });
 
-      repoRiskScore += finalState.riskScore;
-      if (match.severity === 'high')     highCount++;
-      if (match.severity === 'critical') criticalCount++;
-
-      if (finalState.verdict === 'TRUE_POSITIVE')           truePositives++;
-      else if (finalState.verdict === 'NEEDS_HUMAN_REVIEW') needsReview++;
-      else                                                   falsePositives++;
+      if (finalState.verdict === "TRUE_POSITIVE") truePositives++;
+      else if (finalState.verdict === "NEEDS_HUMAN_REVIEW") needsReview++;
+      else falsePositives++;
     }
 
-    // Update repo risk score
-    await env.DB
-      .prepare(
-        `UPDATE repositories
-         SET risk_score = ?,
-             high_severity_findings     = high_severity_findings + ?,
-             critical_severity_findings = critical_severity_findings + ?,
-             last_scan_at               = datetime('now'),
-             last_scan_status           = 'COMPLETED'
-         WHERE id = ?`
-      )
-      .bind(repoRiskScore, highCount, criticalCount, repo.id)
+    // Recalculate metrics dynamically directly from findings & evaluations
+    await recalculateRepoMetrics(env.DB, repo.id);
+
+    // Set last scan metadata
+    await env.DB.prepare(
+      `UPDATE repositories
+         SET last_scan_at     = datetime('now'),
+             last_scan_status = 'COMPLETED'
+         WHERE id = ?`,
+    )
+      .bind(repo.id)
       .run();
   }
 
   // Close scan run
-  await env.DB
-    .prepare(
-      `UPDATE scan_runs SET
+  await env.DB.prepare(
+    `UPDATE scan_runs SET
          completed_at        = datetime('now'),
          total_repos_scanned = ?,
          total_findings      = ?,
@@ -223,14 +259,21 @@ async function runScan(env: Env & Record<string, string>, repoId?: string): Prom
          needs_human_review  = ?,
          false_positives     = ?,
          status              = 'COMPLETED'
-       WHERE id = ?`
+       WHERE id = ?`,
+  )
+    .bind(
+      repos.length,
+      totalFindings,
+      truePositives,
+      needsReview,
+      falsePositives,
+      scanRunId,
     )
-    .bind(repos.length, totalFindings, truePositives, needsReview, falsePositives, scanRunId)
     .run();
 
   console.log(
     `[scan-worker] Scan run ${scanRunId} complete: ` +
-    `${totalFindings} findings across ${repos.length} repos`
+      `${totalFindings} findings across ${repos.length} repos`,
   );
 }
 
@@ -239,29 +282,47 @@ async function runScan(env: Env & Record<string, string>, repoId?: string): Prom
 // ---------------------------------------------------------------------------
 
 export default {
-  async fetch(request: Request, env: Env & Record<string, string>): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env & Record<string, string>,
+  ): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname === '/api/trigger') {
-      if (request.method !== 'POST') {
-        return new Response('Method Not Allowed — use POST /api/trigger', { status: 405 });
+    if (url.pathname === "/api/trigger") {
+      if (request.method !== "POST") {
+        return new Response("Method Not Allowed — use POST /api/trigger", {
+          status: 405,
+        });
       }
       let body: { repoId?: string; dryRun?: boolean } = {};
-      try { body = await request.json(); } catch { /* empty body = full scan */ }
+      try {
+        body = await request.json();
+      } catch {
+        /* empty body = full scan */
+      }
       // Fire-and-forget; Workers runtime keeps the handler alive
-      void runScan(env, body.repoId).catch((e) => console.error('[scan-worker] Scan error:', e));
-      return Response.json({ ok: true, message: 'Scan triggered' });
+      void runScan(env, body.repoId).catch((e) =>
+        console.error("[scan-worker] Scan error:", e),
+      );
+      return Response.json({ ok: true, message: "Scan triggered" });
     }
 
-    if (url.pathname === '/health') {
+    if (url.pathname === "/health") {
       return Response.json({ ok: true, ts: new Date().toISOString() });
     }
 
-    return new Response('RepoScout Scan Worker — POST /api/trigger to scan', { status: 200 });
+    return new Response("RepoScout Scan Worker — POST /api/trigger to scan", {
+      status: 200,
+    });
   },
 
-  async scheduled(_event: ScheduledEvent, env: Env & Record<string, string>): Promise<void> {
-    console.log(`[scan-worker] Scheduled trigger at ${new Date().toISOString()}`);
+  async scheduled(
+    _event: ScheduledEvent,
+    env: Env & Record<string, string>,
+  ): Promise<void> {
+    console.log(
+      `[scan-worker] Scheduled trigger at ${new Date().toISOString()}`,
+    );
     await runScan(env);
   },
 };

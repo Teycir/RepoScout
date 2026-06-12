@@ -5,7 +5,7 @@
 
 If this project helps your work, support ongoing maintenance and new features.
 
-**ETH Donation Wallet**  
+**ETH Donation Wallet**<br>
 `0x11282eE5726B3370c8B480e321b3B2aA13686582`
 
 <a href="https://etherscan.io/address/0x11282eE5726B3370c8B480e321b3B2aA13686582">
@@ -16,7 +16,6 @@ _Scan the QR code or copy the wallet address above._
 
 </div>
 <!-- donation:eth:end -->
-
 
 <div align="center">
 
@@ -55,7 +54,6 @@ _Scan the QR code or copy the wallet address above._
 - [Configuration](#configuration)
 - [Database Schema](#database-schema)
 - [Security & Rate Limiting](#security--rate-limiting)
-- [Roadmap](#roadmap)
 - [Related Projects](#-related-projects)
 - [Services Offered](#-services-offered)
 - [License](#license)
@@ -65,25 +63,49 @@ _Scan the QR code or copy the wallet address above._
 
 ## What is RepoScout?
 
-RepoScout continuously scans a list of monitored GitHub repositories for exposed secrets and credentials, then runs every match through a **5-node LangGraph.js verification pipeline** backed by **Cloudflare Workers AI** before it ever reaches a human.
+RepoScout is an **AI-powered GitHub secret scanning platform** that continuously monitors repositories for exposed credentials and automatically verifies their validity through an intelligent **LangGraph.js verification pipeline**.
 
-Instead of dumping raw regex matches into an inbox, RepoScout resolves each finding to exactly one verdict:
+### The AI Advantage
 
-| Verdict | Meaning |
-|---|---|
-| `TRUE_POSITIVE` | Confirmed — the credential was tested live against its provider's API and is still **ACTIVE** |
-| `FALSE_POSITIVE` | Dismissed — placeholder/test value, low-entropy hash, or the credential was tested and **REVOKED** |
-| `NEEDS_HUMAN_REVIEW` | Ambiguous — provider couldn't be tested (`UNVERIFIABLE`) and the LLM classifier's confidence was below 0.65 |
+Unlike traditional regex-based scanners that flood security teams with false positives, RepoScout uses a sophisticated **5-node LangGraph state machine** powered by **Cloudflare Workers AI** to intelligently classify every finding before it reaches a human:
 
-It reuses **[SecretScout](https://github.com/Teycir/secretscout)**'s YAML pattern templates (91 built-in, regex + literal + entropy + composite modes) and is styled with the cyberpunk/terminal-green dashboard components ported from **[ArxivExplorer](https://github.com/Teycir/ArxivExplorer)**.
+- **Smart Context Analysis** — AI examines surrounding code to understand whether a match is a real credential or test data
+- **Live Credential Testing** — Automated API validation against 30+ provider endpoints (GitHub, AWS, Stripe, Slack, Anthropic, OpenAI, and more)
+- **LLM-Powered Classification** — For ambiguous cases, `@cf/meta/llama-3.1-8b-instruct` analyzes the full context and delivers confidence-scored verdicts
+- **Adaptive Routing** — LangGraph's conditional edges route findings through validation paths based on credential type, entropy, and context
 
-Everything — cron scanning, D1 storage, AI classification, dashboard rendering — runs on Cloudflare's free tier.
+### Three-Verdict System
+
+Instead of dumping raw regex matches into an inbox, RepoScout's AI pipeline resolves each finding to exactly one verdict:
+
+| Verdict              | Meaning                                                                                                         |
+| -------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `TRUE_POSITIVE`      | **AI-confirmed active credential** — tested live against the provider's API and still valid                     |
+| `FALSE_POSITIVE`     | **AI-dismissed** — placeholder/test value, low-entropy, or the credential was tested and revoked                |
+| `NEEDS_HUMAN_REVIEW` | **Ambiguous** — provider couldn't be tested (`UNVERIFIABLE`) and the LLM classifier's confidence was below 0.65 |
+
+### Powered by LangGraph
+
+The verification pipeline is built with **LangGraph.js**, enabling:
+
+- **State-driven processing** with structured intermediate states
+- **Conditional routing** that adapts based on heuristic and API validation results
+- **Parallel node execution** for efficient batch processing
+- **Persistent evaluation state** stored in Cloudflare D1
+
+### Technology Stack
+
+- **Pattern Engine**: Reuses **[SecretScout](https://github.com/Teycir/secretscout)**'s 91 YAML templates (regex + literal + entropy + composite modes)
+- **AI Pipeline**: LangGraph.js 5-node StateGraph with Cloudflare Workers AI
+- **Infrastructure**: 100% Cloudflare free tier (Workers, D1, KV, Pages)
+- **UI Design**: Cyberpunk terminal-green aesthetic ported from **[ArxivExplorer](https://github.com/Teycir/ArxivExplorer)**
 
 ---
 
 ## Use Cases
 
 ### 1. Continuous Org-Wide Monitoring
+
 Point RepoScout at every repo in your org and let the hourly cron worker keep watch. New commits that introduce a live key get flagged within the hour — no manual scans.
 
 ```bash
@@ -92,18 +114,23 @@ npm run db:seed-repos:remote
 ```
 
 ### 2. Cutting Through Alert Fatigue
+
 Traditional scanners flag every `AKIA...`-shaped string whether it's a real key or a fixture in `tests/`. RepoScout's pipeline live-tests the credential against 30+ provider APIs (GitHub, AWS, Stripe, Slack, Anthropic, OpenAI, Cloudflare, and more) — `REVOKED` and placeholder matches are dismissed automatically, so the dashboard only surfaces what actually matters.
 
 ### 3. Analyst Triage Queue
+
 Findings the pipeline can't resolve with confidence land in `/review` — a dedicated queue sorted by severity with one-click **confirm leak** / **false positive** buttons. Every triage decision is written back to D1 as `analyst_verdict`.
 
 ### 4. Repository Risk Scoring
+
 Each monitored repo gets a numeric `risk_score` — the sum of `SeverityWeight × VerdictMultiplier` across all its findings. The dashboard's repository grid is sorted by this score, so the riskiest repos always float to the top.
 
 ### 5. Incident Response — "Did We Already Find This?"
+
 Hit `/api/repos/<id>/findings` (or `repo-cli findings <repoId>`) to pull every finding + AI verdict + masked token + reasoning for a repo in one call — useful when a credential leak is reported and you need to confirm whether RepoScout already caught it.
 
 ### 6. AI Assistant Integration
+
 The bundled `repo-cli` gives Claude, ChatGPT, or any agent structured read access to repos, findings, the review queue, scan history, and dashboard stats — no browser required.
 
 ```bash
@@ -116,7 +143,20 @@ repo-cli stats
 
 ## Features
 
+### 🤖 LangGraph AI Verification Pipeline
+
+The heart of RepoScout — a **5-node intelligent state machine** that transforms raw pattern matches into actionable security intelligence:
+
+- **Context-Aware Analysis** — Gathers ±5 lines of surrounding code for AI evaluation
+- **Heuristic Pre-filtering** — Instantly dismisses obvious placeholders (`xxxx`, `dummy`, `your_key`) and low-entropy patterns
+- **30+ Provider Live Testing** — Real-time API validation against GitHub, GitLab, AWS, Stripe, Slack, Anthropic, OpenAI, HuggingFace, SendGrid, Twilio, Shopify, DigitalOcean, Mailchimp, Square, Datadog, NewRelic, npm, PyPI, DockerHub, Cloudflare, Heroku, Netlify, Vercel, Linear, Notion, Discord, Telegram, Dropbox, Twitch, Zoom, Asana, Mailgun, Sentry, Airtable, PayPal
+- **RSA Proof-of-Possession** — Private keys validated via `crypto.subtle` sign+verify (no network call needed)
+- **LLM Classification** — `@cf/meta/llama-3.1-8b-instruct` analyzes unverifiable findings with confidence scoring
+- **Conditional Routing** — Findings route through different validation paths based on credential type and initial analysis
+- **Daily Quota Management** — KV-backed limiter caps LLM usage at 263 calls/day (10,000 Workers AI neurons ÷ ~38/call)
+
 ### Scanning Engine
+
 - **SecretScout Pattern Reuse** — 91 YAML templates compiled to JSON (`scripts/compile-patterns.ts`), covering cloud creds, VCS tokens, API keys, databases, private keys, and generic high-entropy secrets
 - **Zipball Streaming** — `fflate.Unzip` decompresses repo archives in-memory, never buffering the full archive (stays within the 128 MB Worker memory limit)
 - **Git Trees API Fallback** — repos > 50 MB automatically switch to recursive tree + batched blob fetches
@@ -124,14 +164,8 @@ repo-cli stats
 - **4 Pattern Kinds** — `regex`, `literal`, `entropy` (Shannon, charset-aware thresholds), and `composite` (`requireAll` + `proximityBytes`)
 - **Smart Suppression** — `secretscout:ignore`, `gitleaks:allow`, `nosec` inline markers; SSH/PEM public-key false-positive guard
 
-### LangGraph AI Verification
-- **5-Node StateGraph** — Context Gatherer → Heuristic Filter → External API Validator → Workers AI LLM Classifier → Risk Scorer
-- **30+ Live Validators** — GitHub, GitLab, AWS, Stripe, Slack, Anthropic, OpenAI, HuggingFace, SendGrid, Twilio, Shopify, DigitalOcean, Mailchimp, Square, Datadog, NewRelic, npm, PyPI, DockerHub, Cloudflare, Heroku, Netlify, Vercel, Linear, Notion, Discord, Telegram, Dropbox, Twitch, Zoom, Asana, Mailgun, Sentry, Airtable, PayPal
-- **RSA Proof-of-Possession** — private keys are sign+verify tested via `crypto.subtle` (no network call); a valid key → `ACTIVE`
-- **Conditional Routing** — placeholder matches skip straight to scoring; confirmed `ACTIVE`/`REVOKED` skip the LLM entirely
-- **KV Daily Quota Guard** — `llm_quota:{date}` caps LLM calls at 263/day (10,000 Workers AI neurons ÷ ~38/call), falling back to `NEEDS_HUMAN_REVIEW` when exhausted
-
 ### Dashboard
+
 - **Repository Risk Grid** — cards sorted by `risk_score` desc, colour-coded by severity, `DecryptedText` reveal animation
 - **Findings Inspector** (`/repo/[id]`) — code snippet with the hit line highlighted, masked token, AI reasoning, analyst override, GitHub blob link
 - **Analyst Queue** (`/review`) — all `NEEDS_HUMAN_REVIEW` findings sorted by severity, mini code snippet, confidence bar, one-click triage
@@ -139,14 +173,17 @@ repo-cli stats
 - **Terminal-Green Aesthetic** — `JetBrains Mono`, particle background, ambient beam lines, scroll-progress scan-line — ported from ArxivExplorer
 
 ### Token Pool
+
 - **10-PAT Rotation** — round-robin by `rate_limit_remaining`, rate-limit headers synced back to D1 after every GitHub API call
 - **Theoretical 50K req/hour** — 10 × 5,000/hour free-tier GitHub PATs
 
 ### Security
+
 - **No Raw Secrets to UI/Logs** — `rawMatchedText` never leaves the scan worker; only `maskSecret()` output (`ghp_xxxx...1234`) is persisted/displayed
 - **No-Auth Rate Limiting** — KV-backed fixed-window limiter on every endpoint (write: 1/5min trigger, 30/min review; read: 60/min) — see [Security & Rate Limiting](#security--rate-limiting)
 
 ### Developer Tools
+
 - **CLI Interface** — `repo-cli` for AI assistants (repos, findings, review queue, scan runs, stats)
 - **Manual Trigger** — `POST /api/trigger` for on-demand scans during development
 
@@ -154,16 +191,16 @@ repo-cli stats
 
 ## Architecture
 
-Built entirely on Cloudflare's edge platform:
+Built entirely on Cloudflare's edge platform with **AI-first design**:
 
-- **Frontend**: Next.js 16 App Router, deployed as a **Cloudflare Worker** (via OpenNext `main` + `assets`)
+- **AI Verification Core**: LangGraph.js `StateGraph` with 5 specialized nodes + Cloudflare Workers AI (`@cf/meta/llama-3.1-8b-instruct`)
+- **Frontend**: Next.js 16 App Router, deployed as a Cloudflare Worker (via OpenNext `main` + `assets`)
 - **Scan Worker**: Separate Cloudflare Worker (`reposcout-scan-worker`), hourly cron + manual `/api/trigger`
 - **Database**: Cloudflare D1 (SQLite) — 5 tables: `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens`
 - **Cache**: Cloudflare KV — LLM quota tracking, rate limiting
-- **AI**: Workers AI (`@cf/meta/llama-3.1-8b-instruct`) for `NEEDS_HUMAN_REVIEW` classification
-- **Verification**: `@langchain/langgraph` 5-node `StateGraph`
+- **Pattern Engine**: SecretScout's 91 YAML templates compiled to optimized JSON
 
-### System Design
+### System Design with LangGraph AI Pipeline
 
 ```mermaid
 graph TD
@@ -172,15 +209,15 @@ graph TD
     ScanWorker -->|2. Fetch Repo Zipball| GitHub[GitHub API]
     ScanWorker -->|3. Decompress with fflate| Extractor[In-Memory Text Extractor]
     Extractor -->|4. Pattern Matching| Matcher[SecretScout Pattern Matcher]
-    Matcher -->|5. Each Match| LangGraph[LangGraph.js 5-Node Pipeline]
+    Matcher -->|5. Each Match| LangGraph[🤖 LangGraph.js AI Pipeline]
 
-    subgraph LangGraph AI Verification
+    subgraph "LangGraph AI Verification StateGraph"
         LangGraph --> N1[Node 1: Context Gatherer]
         N1 --> N2[Node 2: Heuristic Filter]
         N2 -->|not placeholder| N3[Node 3: External API Validator]
         N2 -->|is placeholder| FP[Verdict: FALSE_POSITIVE]
         N3 -->|ACTIVE / REVOKED| N5[Node 5: Risk Scorer]
-        N3 -->|UNVERIFIABLE| N4[Node 4: Workers AI LLM]
+        N3 -->|UNVERIFIABLE| N4["Node 4: Workers AI LLM<br/>(Llama 3.1 8B)"]
         N4 --> N5
         N5 -->|TRUE_POSITIVE or NEEDS_HUMAN_REVIEW| Done[Save to D1]
     end
@@ -209,32 +246,34 @@ graph TD
 ```typescript
 export function createScanValidationGraph(env: PipelineEnv) {
   return new StateGraph(ScanFindingState)
-    .addNode('gatherContext',     gatherContextNode)
-    .addNode('heuristicFilter',   heuristicFilterNode)
-    .addNode('apiValidation',     apiValidationNode)
-    .addNode('llmClassification', llmClassificationNode)
-    .addNode('riskScorer',        riskScorerNode)
-    .addEdge('__start__', 'gatherContext')
-    .addEdge('gatherContext', 'heuristicFilter')
-    .addConditionalEdges('heuristicFilter', routeAfterHeuristic, {
-      riskScorer: 'riskScorer', apiValidation: 'apiValidation',
+    .addNode("gatherContext", gatherContextNode)
+    .addNode("heuristicFilter", heuristicFilterNode)
+    .addNode("apiValidation", apiValidationNode)
+    .addNode("llmClassification", llmClassificationNode)
+    .addNode("riskScorer", riskScorerNode)
+    .addEdge("__start__", "gatherContext")
+    .addEdge("gatherContext", "heuristicFilter")
+    .addConditionalEdges("heuristicFilter", routeAfterHeuristic, {
+      riskScorer: "riskScorer",
+      apiValidation: "apiValidation",
     })
-    .addConditionalEdges('apiValidation', routeAfterApiValidation, {
-      riskScorer: 'riskScorer', llmClassification: 'llmClassification',
+    .addConditionalEdges("apiValidation", routeAfterApiValidation, {
+      riskScorer: "riskScorer",
+      llmClassification: "llmClassification",
     })
-    .addEdge('llmClassification', 'riskScorer')
-    .addEdge('riskScorer', '__end__')
+    .addEdge("llmClassification", "riskScorer")
+    .addEdge("riskScorer", "__end__")
     .compile();
 }
 ```
 
-| Node | Purpose | Possible Outcomes |
-|---|---|---|
-| 1. Context Gatherer | Normalises 5-line surrounding context | — |
-| 2. Heuristic Filter | Placeholder terms (`xxxx`, `dummy`, `your_key`, …) + low-entropy repeating hex | Short-circuits to `FALSE_POSITIVE` |
-| 3. External API Validator | Live-tests the credential against its provider (30+ supported) | `ACTIVE` → `TRUE_POSITIVE` · `REVOKED` → `FALSE_POSITIVE` · `UNVERIFIABLE` → Node 4 |
-| 4. Workers AI LLM Classifier | `@cf/meta/llama-3.1-8b-instruct`, only for `UNVERIFIABLE` findings | confidence < 0.65 → `NEEDS_HUMAN_REVIEW` |
-| 5. Risk Scorer | `SeverityWeight × VerdictMultiplier` | writes `riskScore` to D1 |
+| Node                         | Purpose                                                                        | Possible Outcomes                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| 1. Context Gatherer          | Normalises 5-line surrounding context                                          | —                                                                                   |
+| 2. Heuristic Filter          | Placeholder terms (`xxxx`, `dummy`, `your_key`, …) + low-entropy repeating hex | Short-circuits to `FALSE_POSITIVE`                                                  |
+| 3. External API Validator    | Live-tests the credential against its provider (30+ supported)                 | `ACTIVE` → `TRUE_POSITIVE` · `REVOKED` → `FALSE_POSITIVE` · `UNVERIFIABLE` → Node 4 |
+| 4. Workers AI LLM Classifier | `@cf/meta/llama-3.1-8b-instruct`, only for `UNVERIFIABLE` findings             | confidence < 0.65 → `NEEDS_HUMAN_REVIEW`                                            |
+| 5. Risk Scorer               | `SeverityWeight × VerdictMultiplier`                                           | writes `riskScore` to D1                                                            |
 
 ---
 
@@ -243,18 +282,18 @@ export function createScanValidationGraph(env: PipelineEnv) {
 $$\text{RiskScore}(R) = \sum_{f \in \text{Findings}(R)} \text{SeverityWeight}(f.\text{severity}) \times \text{VerdictMultiplier}(f.\text{verdict})$$
 
 | Severity | Weight |
-|---|---|
-| critical | 100 |
-| high | 40 |
-| medium | 15 |
-| low | 5 |
-| info | 1 |
+| -------- | ------ |
+| critical | 100    |
+| high     | 40     |
+| medium   | 15     |
+| low      | 5      |
+| info     | 1      |
 
-| Verdict | Multiplier |
-|---|---|
-| `TRUE_POSITIVE` | 2.0 |
-| `NEEDS_HUMAN_REVIEW` | 1.0 |
-| `FALSE_POSITIVE` | 0.0 |
+| Verdict              | Multiplier |
+| -------------------- | ---------- |
+| `TRUE_POSITIVE`      | 2.0        |
+| `NEEDS_HUMAN_REVIEW` | 1.0        |
+| `FALSE_POSITIVE`     | 0.0        |
 
 ---
 
@@ -467,30 +506,35 @@ wrangler secret put GITHUB_TOKEN_1 --config wrangler.scan.toml
 
 ### Cloudflare Resources
 
-| Resource | Binding | Notes |
-|---|---|---|
-| D1 Database | `DB` | 5 tables — `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens` |
-| KV Namespace | `CACHE` | LLM quota (`llm_quota:{date}`) + rate limiting (`ratelimit:*`) |
-| Workers AI | `AI` | `@cf/meta/llama-3.1-8b-instruct` for Node 4 classification |
-| Service Binding | `SCAN_WORKER` | `reposcout-scan-worker` — used by `/api/trigger` |
+| Resource        | Binding       | Notes                                                                               |
+| --------------- | ------------- | ----------------------------------------------------------------------------------- |
+| D1 Database     | `DB`          | 5 tables — `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens` |
+| KV Namespace    | `CACHE`       | LLM quota (`llm_quota:{date}`) + rate limiting (`ratelimit:*`)                      |
+| Workers AI      | `AI`          | `@cf/meta/llama-3.1-8b-instruct` for Node 4 classification                          |
+| Service Binding | `SCAN_WORKER` | `reposcout-scan-worker` — used by `/api/trigger`                                    |
 
 ---
 
 ## Database Schema
 
 ### `repositories`
+
 Monitored repos — `risk_score`, `high_severity_findings`, `critical_severity_findings`, `last_scan_at`, `last_scan_status`
 
 ### `scan_runs`
+
 Execution log — `total_repos_scanned`, `total_findings`, `true_positives`, `needs_human_review`, `false_positives`, `status`
 
 ### `findings`
+
 Individual matches — `file_path`, `line_number`, `matched_text` (masked), `context` (JSON array of ±5 lines), `pattern_id`, `template_id`, `severity`
 
 ### `ai_evaluations`
+
 LangGraph output — `verdict`, `confidence`, `validation_method` (`api_test`/`llm`/`heuristic`), `validation_status`, `reasoning`, `analyst_reviewed`, `analyst_verdict`
 
 ### `scan_tokens`
+
 GitHub PAT pool — `token_hash` (SHA-256), `masked_token`, `rate_limit_remaining`, `rate_limit_reset`
 
 The canonical source of truth is [`migrations/schema.sql`](migrations/schema.sql).
@@ -501,11 +545,11 @@ The canonical source of truth is [`migrations/schema.sql`](migrations/schema.sql
 
 RepoScout's API has **no authentication** by design — all endpoints are protected by a KV-backed fixed-window rate limiter (`lib/rateLimit.ts`) keyed on `cf-connecting-ip`:
 
-| Endpoint | Limit |
-|---|---|
-| `POST /api/trigger` | 1 / 5 min per IP |
-| `POST /api/review` | 30 / min per IP |
-| `GET /api/repos`, `/api/repos/:id/findings`, `/api/review-queue`, `/api/scan-runs`, `/api/stats` | 60 / min per IP |
+| Endpoint                                                                                         | Limit            |
+| ------------------------------------------------------------------------------------------------ | ---------------- |
+| `POST /api/trigger`                                                                              | 1 / 5 min per IP |
+| `POST /api/review`                                                                               | 30 / min per IP  |
+| `GET /api/repos`, `/api/repos/:id/findings`, `/api/review-queue`, `/api/scan-runs`, `/api/stats` | 60 / min per IP  |
 
 Rate-limited requests receive `429` with `Retry-After` and `RateLimit-*` headers. If the `CACHE` binding is unavailable (e.g. local dev without `wrangler`), routes degrade to unlimited rather than failing.
 
@@ -513,49 +557,18 @@ Rate-limited requests receive `429` with `Retry-After` and `RateLimit-*` headers
 
 ---
 
-## Roadmap
-
-### ✅ Phase 1 — Engine & Database
-- [x] D1 schema (5 tables)
-- [x] YAML → JSON pattern compiler (91 SecretScout templates)
-- [x] Zipball streaming scanner (`fflate`)
-- [x] Scanner — regex / literal / entropy / composite modes
-- [x] 30+ provider validators + RSA proof-of-possession
-
-### ✅ Phase 2 — LangGraph AI Pipeline
-- [x] 5-node `StateGraph` with conditional routing
-- [x] KV daily LLM quota guard (263 calls/day)
-- [x] D1 persistence with UPSERT on `finding_id`
-
-### ✅ Phase 3 — Dashboard
-- [x] Terminal-green UI ported from ArxivExplorer
-- [x] `RepositoryRiskGrid`, `FindingsInspector`, `AnalystQueue`
-- [x] `/api/trigger`, `/api/review`
-- [x] Read API (`/api/repos`, `/api/repos/:id/findings`, `/api/review-queue`, `/api/scan-runs`, `/api/stats`)
-- [x] KV-backed rate limiting (no-auth design)
-- [x] `repo-cli` for AI assistants
-
-### 🚧 Phase 4 — Deploy & Validate
-- [ ] `npm run db:migrate:remote`
-- [ ] Set `GITHUB_TOKEN_1..n` wrangler secrets on scan worker
-- [ ] Seed monitored repos (`scripts/seed-repos.ts`)
-- [ ] `npm run deploy:scan` → `npm run deploy`
-- [ ] Verify hourly cron fires; seed 1 test repo with a dummy PAT to confirm end-to-end pipeline
-
-### 💡 Ideas & Suggestions
-
-Have an idea? [Open an issue](https://github.com/Teycir/RepoScout/issues/new) or contribute!
-
----
 <!-- related-projects:start -->
+
 ## 🌐 Related Projects
 
 Explore more privacy-first and security tools:
 
 ### This Project's Origin
+
 - **[secretscout](https://github.com/Teycir/secretscout)** - High-performance Rust CLI secret scanner. 91 YAML templates, secret validation, SARIF output, desktop app, token pool (8 PATs).
 
 ### Security Tools
+
 - **[BurpAPISecuritySuite](https://github.com/Teycir/BurpAPISecuritySuite)** - Burp Suite extension for API security testing. 15 attack types, 108+ payloads, BOLA/IDOR detection.
 - **[Mcpwn](https://github.com/Teycir/Mcpwn)** - Automated security scanner for Model Context Protocol servers. Detects RCE, path traversal, prompt injection.
 - **[DiffCatcher](https://github.com/Teycir/DiffCatcher)** - Git repo discovery, diff capture, code element extraction.
@@ -564,14 +577,17 @@ Explore more privacy-first and security tools:
 - **[SeekYou](https://github.com/Teycir/SeekYou)** - Host intelligence aggregator — unified OSINT across 15 sources for IPs, domains, and ASNs.
 
 ### Privacy & Encryption
+
 - **[Timeseal](https://github.com/Teycir/Timeseal)** - Time-locked encryption vault with Dead Man's Switch. AES-256 split-key crypto, ephemeral seals.
 - **[Sanctum](https://github.com/Teycir/Sanctum)** - Zero-trust encrypted vault with cryptographic plausible deniability. XChaCha20-Poly1305, Argon2id.
 - **[GhostChat](https://github.com/Teycir/GhostChat)** - True P2P encrypted chat via WebRTC. No servers, no storage, self-destructing messages.
 
 ### Research & AI
+
 - **[ArxivExplorer](https://github.com/Teycir/ArxivExplorer)** - Semantic arXiv paper search with AI-powered summaries. Source of RepoScout's dashboard components and terminal-green aesthetic.
 
 ### MCP Security Servers
+
 - **[burp-mcp-server](https://github.com/Teycir/burp-mcp-server)** - MCP server for Burp Suite Professional. Vulnerability scanning via AI assistants.
 - **[nuclei-mcp](https://github.com/Teycir/nuclei-mcp)** - MCP server for Nuclei. Multi-target scanning, severity filtering.
 - **[nmap-mcp](https://github.com/Teycir/nmap-mcp)** - MCP server for Nmap. Stealth recon, vuln/NSE scanning.
@@ -580,6 +596,7 @@ Explore more privacy-first and security tools:
 ---
 
 <!-- services:start -->
+
 ## 💼 Services Offered
 
 - 🔒 **Security Tool Development** - Secret scanners, Burp extensions, penetration testing automation
@@ -590,6 +607,7 @@ Explore more privacy-first and security tools:
 - 📊 **DevSecOps Tooling** - CI/CD secret scanning, SARIF reporting, compliance automation
 
 **Get in Touch**: [teycirbensoltane.tn](https://teycirbensoltane.tn) | Available for freelance projects and consulting
+
 <!-- services:end -->
 
 ---

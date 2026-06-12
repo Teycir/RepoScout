@@ -2,20 +2,20 @@
 // LangGraph 5-node AI verification pipeline.
 // Upgraded to spec: NEEDS_HUMAN_REVIEW verdict, conditional edges, KV quota guard.
 
-import { StateGraph, Annotation } from '@langchain/langgraph';
-import { validateCredential } from '../lib/validator.js';
-import { isLikelyPlaceholder } from '../lib/scanner.js';
-import { findingRiskScore } from '../lib/types.js';
-import type { Severity, Verdict } from '../lib/types.js';
+import { StateGraph, Annotation } from "@langchain/langgraph";
+import { validateCredential } from "../lib/validator.js";
+import { isLikelyPlaceholder } from "../lib/scanner.js";
+import { findingRiskScore } from "../lib/types.js";
+import type { Severity, Verdict } from "../lib/types.js";
 
 // ---------------------------------------------------------------------------
 // Env binding interface
 // ---------------------------------------------------------------------------
 
 export interface PipelineEnv {
-  DB:    D1Database;
+  DB: D1Database;
   CACHE: KVNamespace;
-  AI:    Ai;
+  AI: Ai;
   SUMMARY_MODEL?: string;
 }
 
@@ -24,25 +24,27 @@ export interface PipelineEnv {
 // ---------------------------------------------------------------------------
 
 export const ScanFindingState = Annotation.Root({
-  findingId:              Annotation<string>(),
-  repoName:               Annotation<string>(),
-  filePath:               Annotation<string>(),
-  lineNumber:             Annotation<number>(),
-  matchedText:            Annotation<string>(),   // masked
-  rawMatchedText:         Annotation<string>(),   // unmasked — never logged
-  lineContent:            Annotation<string>(),
-  surroundingContext:     Annotation<string>(),
-  patternId:              Annotation<string>(),
-  templateId:             Annotation<string>(),
-  severity:               Annotation<Severity>(),
+  findingId: Annotation<string>(),
+  repoName: Annotation<string>(),
+  filePath: Annotation<string>(),
+  lineNumber: Annotation<number>(),
+  matchedText: Annotation<string>(), // masked
+  rawMatchedText: Annotation<string>(), // unmasked — never logged
+  lineContent: Annotation<string>(),
+  surroundingContext: Annotation<string>(),
+  patternId: Annotation<string>(),
+  templateId: Annotation<string>(),
+  severity: Annotation<Severity>(),
   // pipeline state
   isHeuristicPlaceholder: Annotation<boolean>(),
-  validationStatus:       Annotation<'ACTIVE' | 'REVOKED' | 'UNVERIFIABLE' | 'FALSE_POSITIVE'>(),
-  verdict:                Annotation<Verdict>(),
-  aiReasoning:            Annotation<string>(),
-  confidenceScore:        Annotation<number>(),
-  riskScore:              Annotation<number>(),
-  validationMethod:       Annotation<'api_test' | 'llm' | 'heuristic'>(),
+  validationStatus: Annotation<
+    "ACTIVE" | "REVOKED" | "UNVERIFIABLE" | "FALSE_POSITIVE"
+  >(),
+  verdict: Annotation<Verdict>(),
+  aiReasoning: Annotation<string>(),
+  confidenceScore: Annotation<number>(),
+  riskScore: Annotation<number>(),
+  validationMethod: Annotation<"api_test" | "llm" | "heuristic">(),
 });
 
 type StateType = typeof ScanFindingState.State;
@@ -56,16 +58,16 @@ const LLM_DAILY_CAP = 263;
 
 async function checkLlmQuota(cache: KVNamespace): Promise<boolean> {
   const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const key  = `llm_quota:${date}`;
-  const raw  = await cache.get(key);
+  const key = `llm_quota:${date}`;
+  const raw = await cache.get(key);
   const used = raw ? parseInt(raw, 10) : 0;
   return used < LLM_DAILY_CAP;
 }
 
 async function incrementLlmQuota(cache: KVNamespace): Promise<void> {
   const date = new Date().toISOString().slice(0, 10);
-  const key  = `llm_quota:${date}`;
-  const raw  = await cache.get(key);
+  const key = `llm_quota:${date}`;
+  const raw = await cache.get(key);
   const next = (raw ? parseInt(raw, 10) : 0) + 1;
   // TTL = 26 hours to ensure cleanup
   await cache.put(key, String(next), { expirationTtl: 26 * 60 * 60 });
@@ -75,9 +77,11 @@ async function incrementLlmQuota(cache: KVNamespace): Promise<void> {
 // Node 1 — Context Gatherer
 // ---------------------------------------------------------------------------
 
-async function gatherContextNode(state: StateType): Promise<Partial<StateType>> {
+async function gatherContextNode(
+  state: StateType,
+): Promise<Partial<StateType>> {
   // Context is pre-loaded by the caller; this node normalises it.
-  const context = state.surroundingContext ?? '// No context available';
+  const context = state.surroundingContext ?? "// No context available";
   return { surroundingContext: context };
 }
 
@@ -85,17 +89,20 @@ async function gatherContextNode(state: StateType): Promise<Partial<StateType>> 
 // Node 2 — Heuristic Filter
 // ---------------------------------------------------------------------------
 
-async function heuristicFilterNode(state: StateType): Promise<Partial<StateType>> {
+async function heuristicFilterNode(
+  state: StateType,
+): Promise<Partial<StateType>> {
   const raw = state.rawMatchedText;
 
   if (isLikelyPlaceholder(raw)) {
     return {
       isHeuristicPlaceholder: true,
-      validationStatus:        'FALSE_POSITIVE',
-      verdict:                 'FALSE_POSITIVE',
-      aiReasoning:             'Matched heuristics for a placeholder/mock value (placeholder terms or low-entropy repeating hex).',
-      confidenceScore:         1.0,
-      validationMethod:        'heuristic',
+      validationStatus: "FALSE_POSITIVE",
+      verdict: "FALSE_POSITIVE",
+      aiReasoning:
+        "Matched heuristics for a placeholder/mock value (placeholder terms or low-entropy repeating hex).",
+      confidenceScore: 1.0,
+      validationMethod: "heuristic",
     };
   }
 
@@ -103,11 +110,12 @@ async function heuristicFilterNode(state: StateType): Promise<Partial<StateType>
   if (/^[a-f0-9]{32,}$/i.test(raw) && new Set(raw.toLowerCase()).size <= 6) {
     return {
       isHeuristicPlaceholder: true,
-      validationStatus:        'FALSE_POSITIVE',
-      verdict:                 'FALSE_POSITIVE',
-      aiReasoning:             'Low-entropy hex string — likely a hash or UUID, not a credential.',
-      confidenceScore:         0.9,
-      validationMethod:        'heuristic',
+      validationStatus: "FALSE_POSITIVE",
+      verdict: "FALSE_POSITIVE",
+      aiReasoning:
+        "Low-entropy hex string — likely a hash or UUID, not a credential.",
+      confidenceScore: 0.9,
+      validationMethod: "heuristic",
     };
   }
 
@@ -116,50 +124,68 @@ async function heuristicFilterNode(state: StateType): Promise<Partial<StateType>
 
 // Route after heuristic: if already FALSE_POSITIVE, skip to scorer
 function routeAfterHeuristic(state: StateType): string {
-  if (state.verdict === 'FALSE_POSITIVE') return 'riskScorer';
-  return 'apiValidation';
+  if (state.verdict === "FALSE_POSITIVE") return "riskScorer";
+  return "apiValidation";
 }
 
 // ---------------------------------------------------------------------------
 // Node 3 — External API Validator
 // ---------------------------------------------------------------------------
 
-async function apiValidationNode(state: StateType): Promise<Partial<StateType>> {
-  const result = await validateCredential(state.patternId, state.rawMatchedText);
+async function apiValidationNode(
+  state: StateType,
+): Promise<Partial<StateType>> {
+  const result = await validateCredential(
+    state.patternId,
+    state.rawMatchedText,
+  );
 
-  if (result.status === 'ACTIVE') {
+  if (result.status === "ACTIVE") {
     return {
-      validationStatus: 'ACTIVE',
-      verdict:          'TRUE_POSITIVE',
-      aiReasoning:      result.message,
-      confidenceScore:  1.0,
-      validationMethod: 'api_test',
+      validationStatus: "ACTIVE",
+      verdict: "TRUE_POSITIVE",
+      aiReasoning: result.message,
+      confidenceScore: 1.0,
+      validationMethod: "api_test",
     };
   }
 
-  if (result.status === 'REVOKED') {
+  if (result.status === "REVOKED") {
     return {
-      validationStatus: 'REVOKED',
-      verdict:          'FALSE_POSITIVE',
-      aiReasoning:      result.message,
-      confidenceScore:  0.95,
-      validationMethod: 'api_test',
+      validationStatus: "REVOKED",
+      verdict: "FALSE_POSITIVE",
+      aiReasoning: result.message,
+      confidenceScore: 0.95,
+      validationMethod: "api_test",
     };
   }
 
-  // UNVERIFIABLE or FALSE_POSITIVE from format check
+  // UNVERIFIABLE — cannot determine; hand off to LLM classifier
+  if (result.status === "UNVERIFIABLE") {
+    return {
+      validationStatus: "UNVERIFIABLE",
+      validationMethod: "api_test",
+    };
+  }
+
+  // FALSE_POSITIVE from format check — verdict MUST be set here so that
+  // routeAfterApiValidation short-circuits to riskScorer instead of falling
+  // through to the LLM classifier and burning daily quota.
   return {
-    validationStatus: result.status,
-    validationMethod: 'api_test',
+    validationStatus: "FALSE_POSITIVE",
+    verdict: "FALSE_POSITIVE",
+    aiReasoning: result.message,
+    confidenceScore: 0.9,
+    validationMethod: "api_test",
   };
 }
 
 // Route after API validation: confirmed → scorer; unverifiable → LLM
 function routeAfterApiValidation(state: StateType): string {
-  if (state.verdict === 'TRUE_POSITIVE' || state.verdict === 'FALSE_POSITIVE') {
-    return 'riskScorer';
+  if (state.verdict === "TRUE_POSITIVE" || state.verdict === "FALSE_POSITIVE") {
+    return "riskScorer";
   }
-  return 'llmClassification';
+  return "llmClassification";
 }
 
 // ---------------------------------------------------------------------------
@@ -173,14 +199,15 @@ async function llmClassificationNode(
   const quotaOk = await checkLlmQuota(env.CACHE);
   if (!quotaOk) {
     return {
-      verdict:          'NEEDS_HUMAN_REVIEW',
-      aiReasoning:      'Daily LLM quota exhausted — queued for manual analyst review.',
-      confidenceScore:  0.0,
-      validationMethod: 'llm',
+      verdict: "NEEDS_HUMAN_REVIEW",
+      aiReasoning:
+        "Daily LLM quota exhausted — queued for manual analyst review.",
+      confidenceScore: 0.0,
+      validationMethod: "llm",
     };
   }
 
-  const model = env.SUMMARY_MODEL ?? '@cf/meta/llama-3.1-8b-instruct';
+  const model = env.SUMMARY_MODEL ?? "@cf/meta/llama-3.1-8b-instruct";
   const prompt = `You are an expert security auditor. Analyze the following finding and determine if it is a TRUE_POSITIVE (real exposed credential), FALSE_POSITIVE (test/mock/doc), or NEEDS_HUMAN_REVIEW (ambiguous).
 
 REPOSITORY: ${state.repoName}
@@ -203,37 +230,45 @@ Respond ONLY with valid JSON:
   try {
     const response = await (env.AI as any).run(model, {
       messages: [
-        { role: 'system', content: 'You respond only in strict JSON with no markdown fences.' },
-        { role: 'user',   content: prompt },
+        {
+          role: "system",
+          content: "You respond only in strict JSON with no markdown fences.",
+        },
+        { role: "user", content: prompt },
       ],
     });
 
-    await incrementLlmQuota(env.CACHE);
-
-    const text = (response.response ?? response.text ?? '').replace(/```json|```/g, '').trim();
+    const text = (response.response ?? response.text ?? "")
+      .replace(/```json|```/g, "")
+      .trim();
     const parsed = JSON.parse(text) as {
       verdict: Verdict;
       reasoning: string;
       confidence: number;
     };
 
+    // Increment quota only after we know the response parsed successfully.
+    await incrementLlmQuota(env.CACHE);
+
     // Confidence < 0.65 → escalate to analyst
     const verdict: Verdict =
-      parsed.confidence < 0.65 ? 'NEEDS_HUMAN_REVIEW' : (parsed.verdict ?? 'NEEDS_HUMAN_REVIEW');
+      parsed.confidence < 0.65
+        ? "NEEDS_HUMAN_REVIEW"
+        : (parsed.verdict ?? "NEEDS_HUMAN_REVIEW");
 
     return {
-      verdict:          verdict,
-      aiReasoning:      parsed.reasoning ?? 'No reasoning provided.',
-      confidenceScore:  parsed.confidence ?? 0.5,
-      validationMethod: 'llm',
+      verdict: verdict,
+      aiReasoning: parsed.reasoning ?? "No reasoning provided.",
+      confidenceScore: parsed.confidence ?? 0.5,
+      validationMethod: "llm",
     };
   } catch (e) {
-    console.error('[pipeline] LLM call failed:', e);
+    console.error("[pipeline] LLM call failed:", e);
     return {
-      verdict:          'NEEDS_HUMAN_REVIEW',
-      aiReasoning:      'LLM call failed — queued for manual analyst review.',
-      confidenceScore:  0.0,
-      validationMethod: 'llm',
+      verdict: "NEEDS_HUMAN_REVIEW",
+      aiReasoning: "LLM call failed — queued for manual analyst review.",
+      confidenceScore: 0.0,
+      validationMethod: "llm",
     };
   }
 }
@@ -242,7 +277,9 @@ Respond ONLY with valid JSON:
 // Node 5 — Risk Scorer
 // ---------------------------------------------------------------------------
 
-async function riskScorerNode(state: StateType, env: PipelineEnv): Promise<Partial<StateType>> {
+async function riskScorerNode(
+  state: StateType,
+): Promise<Partial<StateType>> {
   const score = findingRiskScore(state.severity, state.verdict);
   return { riskScore: score };
 }
@@ -252,16 +289,19 @@ async function riskScorerNode(state: StateType, env: PipelineEnv): Promise<Parti
 // ---------------------------------------------------------------------------
 
 export interface PersistInput {
-  findingId:        string;
-  verdict:          Verdict;
-  confidence:       number;
+  findingId: string;
+  verdict: Verdict;
+  confidence: number;
   validationMethod: string;
   validationStatus: string;
-  reasoning:        string;
-  riskScore:        number;
+  reasoning: string;
+  riskScore: number;
 }
 
-export async function persistEvaluation(db: D1Database, input: PersistInput): Promise<void> {
+export async function persistEvaluation(
+  db: D1Database,
+  input: PersistInput,
+): Promise<void> {
   const id = crypto.randomUUID();
   await db
     .prepare(
@@ -274,7 +314,7 @@ export async function persistEvaluation(db: D1Database, input: PersistInput): Pr
          validation_method = excluded.validation_method,
          validation_status = excluded.validation_status,
          reasoning = excluded.reasoning,
-         evaluated_at = excluded.evaluated_at`
+         evaluated_at = excluded.evaluated_at`,
     )
     .bind(
       id,
@@ -294,24 +334,24 @@ export async function persistEvaluation(db: D1Database, input: PersistInput): Pr
 
 export function createScanValidationGraph(env: PipelineEnv) {
   const workflow = new StateGraph(ScanFindingState)
-    .addNode('gatherContext',      gatherContextNode)
-    .addNode('heuristicFilter',    heuristicFilterNode)
-    .addNode('apiValidation',      (s) => apiValidationNode(s))
-    .addNode('llmClassification',  (s) => llmClassificationNode(s, env))
-    .addNode('riskScorer',         (s) => riskScorerNode(s, env))
+    .addNode("gatherContext", gatherContextNode)
+    .addNode("heuristicFilter", heuristicFilterNode)
+    .addNode("apiValidation", (s) => apiValidationNode(s))
+    .addNode("llmClassification", (s) => llmClassificationNode(s, env))
+    .addNode("riskScorer", riskScorerNode)
 
-    .addEdge('__start__', 'gatherContext')
-    .addEdge('gatherContext', 'heuristicFilter')
-    .addConditionalEdges('heuristicFilter', routeAfterHeuristic, {
-      riskScorer:      'riskScorer',
-      apiValidation:   'apiValidation',
+    .addEdge("__start__", "gatherContext")
+    .addEdge("gatherContext", "heuristicFilter")
+    .addConditionalEdges("heuristicFilter", routeAfterHeuristic, {
+      riskScorer: "riskScorer",
+      apiValidation: "apiValidation",
     })
-    .addConditionalEdges('apiValidation', routeAfterApiValidation, {
-      riskScorer:         'riskScorer',
-      llmClassification:  'llmClassification',
+    .addConditionalEdges("apiValidation", routeAfterApiValidation, {
+      riskScorer: "riskScorer",
+      llmClassification: "llmClassification",
     })
-    .addEdge('llmClassification', 'riskScorer')
-    .addEdge('riskScorer', '__end__');
+    .addEdge("llmClassification", "riskScorer")
+    .addEdge("riskScorer", "__end__");
 
   return workflow.compile();
 }

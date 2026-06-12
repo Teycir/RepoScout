@@ -78,6 +78,13 @@ CREATE TABLE IF NOT EXISTS scan_tokens (
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_repositories_risk      ON repositories(risk_score DESC);
+
+-- Dedup guard: the same secret (same repo/file/line/pattern/masked text) must
+-- not accumulate duplicate rows across repeated scans. crypto.randomUUID()
+-- ids never collide on their own, so INSERT OR IGNORE relies on this index
+-- to actually ignore re-detections of a persisting secret.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_findings_dedup   ON findings(repo_id, file_path, line_number, pattern_id, matched_text);
+
 CREATE INDEX IF NOT EXISTS idx_findings_repo           ON findings(repo_id);
 CREATE INDEX IF NOT EXISTS idx_findings_scan_run       ON findings(scan_run_id);
 CREATE INDEX IF NOT EXISTS idx_findings_severity       ON findings(severity);
