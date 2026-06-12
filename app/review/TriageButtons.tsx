@@ -42,8 +42,8 @@ export function TriageButtons({ evalId, findingId }: Props) {
   if (state === 'done') {
     return (
       <div className="flex items-center gap-1.5 text-[10px] font-mono">
-        <CheckCircle size={11} className={chosen === 'TRUE_POSITIVE' ? 'text-neon-red' : 'text-neon-green'} />
-        <span className={chosen === 'TRUE_POSITIVE' ? 'text-neon-red/60' : 'text-neon-green/60'}>
+        <CheckCircle size={11} className={chosen === 'TRUE_POSITIVE' ? 'text-neon-red' : 'text-neon-red/60'} />
+        <span className={chosen === 'TRUE_POSITIVE' ? 'text-neon-red/60' : 'text-neon-red/40'}>
           marked {chosen === 'TRUE_POSITIVE' ? 'true positive' : 'false positive'}
         </span>
       </div>
@@ -70,8 +70,8 @@ export function TriageButtons({ evalId, findingId }: Props) {
         onClick={() => handleTriage('FALSE_POSITIVE')}
         disabled={state === 'loading'}
         className="flex items-center gap-1 text-[10px] font-mono px-3 py-1.5 rounded
-          border border-neon-green/15 text-neon-green/40 bg-neon-green/5
-          hover:bg-neon-green/10 hover:border-neon-green/30 hover:text-neon-green/70
+          border border-neon-red/15 text-neon-red/40 bg-neon-red/5
+          hover:bg-neon-red/10 hover:border-neon-red/30 hover:text-neon-red/70
           disabled:opacity-40 disabled:cursor-not-allowed transition-all"
       >
         {state === 'loading' && chosen === 'FALSE_POSITIVE'

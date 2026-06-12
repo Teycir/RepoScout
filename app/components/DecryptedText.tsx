@@ -25,7 +25,7 @@ export default function DecryptedText({
   characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;:,.<>?',
   className = '',
   parentClassName = '',
-  encryptedClassName = 'text-neon-green/40',
+  encryptedClassName = 'text-neon-red/40',
   animateOn = 'hover',
 }: DecryptedTextProps) {
   const [isHovering, setIsHovering] = useState(false);

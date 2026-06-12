@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[350px] pointer-events-none"
           style={{
             background:
-              'radial-gradient(ellipse at center top, rgba(0,255,65,0.06) 0%, transparent 70%)',
+              'radial-gradient(ellipse at center top, rgba(255,26,26,0.06) 0%, transparent 70%)',
           }}
           aria-hidden="true"
         />
@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </div>
 
-        <footer className="border-t border-neon-green/8 py-4 px-6 text-center text-[10px] font-mono text-neon-green/20">
+        <footer className="border-t border-neon-red/8 py-4 px-6 text-center text-[10px] font-mono text-neon-red/20">
           RepoScout · Cloudflare Workers AI · D1 · KV · SecretScout patterns
         </footer>
       </body>

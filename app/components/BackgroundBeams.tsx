@@ -31,9 +31,9 @@ export function BackgroundBeams({ className = '' }: { className?: string }) {
               id={`beam-grad-${i}`}
               x1="0%" y1="0%" x2="0%" y2="100%"
             >
-              <stop offset="0%"   stopColor="#00ff41" stopOpacity="0" />
-              <stop offset="40%"  stopColor="#00ff41" stopOpacity={b.opacity} />
-              <stop offset="100%" stopColor="#00ff41" stopOpacity="0" />
+              <stop offset="0%"   stopColor="#ff1a1a" stopOpacity="0" />
+              <stop offset="40%"  stopColor="#ff1a1a" stopOpacity={b.opacity} />
+              <stop offset="100%" stopColor="#ff1a1a" stopOpacity="0" />
             </linearGradient>
           ))}
         </defs>

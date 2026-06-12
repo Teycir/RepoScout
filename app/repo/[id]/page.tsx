@@ -19,7 +19,7 @@ function SeverityBadge({ sev }: { sev: string }) {
     critical: "bg-neon-red/15 text-neon-red border border-neon-red/30",
     high: "bg-neon-amber/15 text-neon-amber border border-neon-amber/30",
     medium: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20",
-    low: "bg-neon-green/10 text-neon-green/60 border border-neon-green/15",
+    low: "bg-neon-red/5 text-neon-red/50 border border-neon-red/10",
     info: "bg-white/5 text-white/30 border border-white/10",
   };
   return (
@@ -62,13 +62,7 @@ function VerdictBadge({
   }
   if (verdict === "FALSE_POSITIVE") {
     return (
-      <span className="flex items-center gap-1 text-[9px] text-neon-green/50 font-mono">
-        <CheckCircle size={9} />
-        FALSE POSITIVE
-        {confidence != null && (
-          <span className="opacity-50">({(confidence * 100).toFixed(0)}%)</span>
-        )}
-      </span>
+      <span className="text-neon-red/40 text-[9px] font-mono">— false positive —</span>
     );
   }
   if (verdict === "NEEDS_HUMAN_REVIEW") {
@@ -156,7 +150,7 @@ function FindingCard({ f }: { f: FindingWithEval }) {
       <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-neon-green/60 text-[11px] font-mono break-all">
+            <span className="text-neon-red/60 text-[11px] font-mono break-all">
               {f.file_path}
               <span className="text-white/25">:{f.line_number}</span>
             </span>
@@ -165,8 +159,8 @@ function FindingCard({ f }: { f: FindingWithEval }) {
                 href={f.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[9px] text-neon-green/25
-                  hover:text-neon-green/55 transition-colors shrink-0"
+                className="flex items-center gap-1 text-[9px] text-neon-red/25
+                  hover:text-neon-red/55 transition-colors shrink-0"
               >
                 <ExternalLink size={9} />
                 GitHub
@@ -212,7 +206,7 @@ function FindingCard({ f }: { f: FindingWithEval }) {
 
       {f.eval?.reasoning && (
         <div className="border-t border-white/5 pt-3 mt-1">
-          <div className="text-[9px] text-neon-green/25 uppercase tracking-widest mb-1 font-mono">
+          <div className="text-[9px] text-neon-red/25 uppercase tracking-widest mb-1 font-mono">
             // ai reasoning
           </div>
           <p className="text-[11px] text-white/45 font-mono leading-relaxed">
@@ -225,10 +219,10 @@ function FindingCard({ f }: { f: FindingWithEval }) {
         f.eval.analyst_verdict &&
         f.eval.analyst_verdict !== f.eval.ai_verdict && (
           <div className="mt-2 flex items-center gap-1.5 border-t border-white/5 pt-2">
-            <span className="text-[9px] text-neon-green/30 font-mono">
+            <span className="text-[9px] text-neon-red/30 font-mono">
               analyst override:
             </span>
-            <span className="text-[9px] text-neon-green font-mono font-bold">
+            <span className="text-[9px] text-neon-red font-mono font-bold">
               {f.eval.analyst_verdict}
             </span>
           </div>
@@ -284,10 +278,10 @@ function RiskHeader({
     (f) => f.eval?.verdict === "NEEDS_HUMAN_REVIEW",
   ).length;
   return (
-    <div className="border border-neon-green/10 rounded-lg p-5 bg-dark-bg/40 mb-6">
+    <div className="border border-neon-red/10 rounded-lg p-5 bg-dark-bg/40 mb-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div className="text-neon-green/30 text-[10px] font-mono mb-0.5">
+          <div className="text-neon-red/30 text-[10px] font-mono mb-0.5">
             {owner} /
           </div>
           <h1 className="text-xl font-bold text-white font-mono">{name}</h1>
@@ -296,8 +290,8 @@ function RiskHeader({
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-neon-green/25 text-[10px] font-mono
-                hover:text-neon-green/55 mt-0.5 transition-colors"
+              className="flex items-center gap-1 text-neon-red/25 text-[10px] font-mono
+                hover:text-neon-red/55 mt-0.5 transition-colors"
             >
               <ExternalLink size={9} />
               {url}
@@ -396,7 +390,7 @@ export default async function RepoDetailPage({ params }: PageProps) {
     <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-neon-green/40 hover:text-neon-green/70
+        className="inline-flex items-center gap-1.5 text-neon-red/40 hover:text-neon-red/70
           text-xs font-mono mb-6 transition-colors"
       >
         <ArrowLeft size={11} />
@@ -404,8 +398,8 @@ export default async function RepoDetailPage({ params }: PageProps) {
       </Link>
 
       {findings.length === 0 ? (
-        <div className="border border-neon-green/10 rounded-lg p-12 text-center">
-          <div className="text-neon-green/20 text-sm font-mono mb-2">
+        <div className="border border-neon-red/10 rounded-lg p-12 text-center">
+          <div className="text-neon-red/20 text-sm font-mono mb-2">
             // no findings for this repository
           </div>
           <p className="text-white/20 text-xs font-mono">

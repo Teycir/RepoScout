@@ -9,10 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'neon-green': '#00ff41',
-        'neon-red':   '#ff4141',
+        'neon-red':   '#ff1a1a',
         'neon-amber': '#ffaa00',
         'dark-bg':    '#0a0a0a',
+        'dark-text':  '#e0e0e0',
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
@@ -46,8 +46,8 @@ const config: Config = {
           '100%': { backgroundPosition: '200% 50%' },
         },
         'glow-pulse': {
-          '0%, 100%': { boxShadow: '0 0 8px rgba(0,255,65,0.15), 0 0 24px rgba(0,255,65,0.06)' },
-          '50%':      { boxShadow: '0 0 18px rgba(0,255,65,0.40), 0 0 48px rgba(0,255,65,0.18)' },
+          '0%, 100%': { boxShadow: '0 0 8px rgba(255,26,26,0.15), 0 0 24px rgba(255,26,26,0.06)' },
+          '50%':      { boxShadow: '0 0 18px rgba(255,26,26,0.40), 0 0 48px rgba(255,26,26,0.18)' },
         },
         'dot-ping': {
           '0%':        { transform: 'scale(1)',   opacity: '1' },

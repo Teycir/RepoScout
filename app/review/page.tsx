@@ -19,7 +19,7 @@ function SeverityBadge({ sev }: { sev: string }) {
     critical: 'bg-neon-red/15 text-neon-red border border-neon-red/30',
     high:     'bg-neon-amber/15 text-neon-amber border border-neon-amber/30',
     medium:   'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
-    low:      'bg-neon-green/10 text-neon-green/60 border border-neon-green/15',
+    low:      'bg-neon-red/5 text-neon-red/50 border border-neon-red/10',
     info:     'bg-white/5 text-white/30 border border-white/10',
   };
   return (
@@ -81,16 +81,16 @@ function QueueCard({ f }: { f: FindingWithEval }) {
       hover:border-neon-amber/25 transition-colors">
       <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-neon-green/40 mb-0.5 flex-wrap">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono text-neon-red/40 mb-0.5 flex-wrap">
             <Link href={`/repo/${f.repo_id}`}
-              className="hover:text-neon-green/70 transition-colors">
+              className="hover:text-neon-red/70 transition-colors">
               {f.repo_owner}/{f.repo_name}
             </Link>
             <span className="text-white/15">·</span>
             <span className="text-white/30">{f.file_path}:{f.line_number}</span>
             {f.file_url && (
               <a href={f.file_url} target="_blank" rel="noopener noreferrer"
-                className="text-neon-green/20 hover:text-neon-green/50 transition-colors">
+                className="text-neon-red/20 hover:text-neon-red/50 transition-colors">
                 <ExternalLink size={9} />
               </a>
             )}
@@ -147,7 +147,7 @@ export default async function ReviewQueuePage() {
   return (
     <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
       <Link href="/"
-        className="inline-flex items-center gap-1.5 text-neon-green/40 hover:text-neon-green/70
+        className="inline-flex items-center gap-1.5 text-neon-red/40 hover:text-neon-red/70
           text-xs font-mono mb-6 transition-colors">
         <ArrowLeft size={11} />back to dashboard
       </Link>

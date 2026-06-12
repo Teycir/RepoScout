@@ -7,15 +7,14 @@ import { Shield, AlertTriangle, Clock, Users } from 'lucide-react';
 import type { DashboardStats } from '@/lib/db';
 
 function CounterCard({
-  label, value, icon: Icon, color = 'green',
+  label, value, icon: Icon, color = 'red',
 }: {
   label: string;
   value: number | string;
   icon: React.ElementType;
-  color?: 'green' | 'red' | 'amber';
+  color?: 'red' | 'amber';
 }) {
   const colors = {
-    green: 'text-neon-green border-neon-green/20 bg-neon-green/5',
     red:   'text-neon-red   border-neon-red/20   bg-neon-red/5',
     amber: 'text-neon-amber border-neon-amber/20 bg-neon-amber/5',
   };
@@ -52,7 +51,7 @@ function NextScanCountdown({ lastScanAt }: { lastScanAt: string | null }) {
   }, []);
 
   return (
-    <div className="flex flex-col gap-1 border border-neon-green/20 bg-neon-green/5 rounded px-4 py-3 text-neon-green">
+    <div className="flex flex-col gap-1 border border-neon-red/20 bg-neon-red/5 rounded px-4 py-3 text-neon-red">
       <div className="flex items-center gap-2 text-[10px] opacity-60 uppercase tracking-widest">
         <Clock size={10} />
         next scan
@@ -66,12 +65,12 @@ export function HeroStrip({ stats }: { stats: DashboardStats }) {
   return (
     <section className="mb-8">
       <div className="mb-6">
-        <h1 className="text-neon-green font-bold text-xl tracking-wide mb-1">
-          <span className="text-glow-green">REPO</span>
+        <h1 className="text-neon-red font-bold text-xl tracking-wide mb-1">
+          <span className="text-glow-red">REPO</span>
           <span className="text-white/70">SCOUT</span>
-          <span className="text-neon-green/40 text-sm ml-3 font-normal">// secret scanner</span>
+          <span className="text-neon-red/40 text-sm ml-3 font-normal">// secret scanner</span>
         </h1>
-        <p className="text-neon-green/30 text-xs">
+        <p className="text-neon-red/30 text-xs">
           SecretScout patterns · LangGraph AI pipeline · Cloudflare Workers
         </p>
       </div>
@@ -81,7 +80,7 @@ export function HeroStrip({ stats }: { stats: DashboardStats }) {
           label="repos monitored"
           value={stats.totalRepos}
           icon={Shield}
-          color="green"
+          color="red"
         />
         <CounterCard
           label="critical findings"
