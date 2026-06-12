@@ -5,60 +5,108 @@
 
 ---
 
-## Phase 1 — Engine & Database `Week 1`
+## Phase 1 — Engine & Database ✅ `DONE`
 
-- [ ] Run D1 migration — `wrangler d1 execute reposcout --file=migrations/schema.sql`
-- [ ] Seed `scan_tokens` with 7 GitHub PATs from `secretscout/.env` (hashed + masked)
-- [ ] Build YAML → JSON pattern compiler — `scripts/compile-patterns.ts` walks `secretscout/templates/**/*.yaml`, emits `src/scan-worker/patterns.json`
-- [ ] Implement zipball streaming scanner — `src/scan-worker/scanner.ts` with fflate `Unzip`, `SKIP_EXTENSIONS`, `SKIP_DIRS`, 1000-char line cap
-- [ ] Port SecretScout types to TypeScript — `src/lib/types.ts` (`Template`, `Pattern`, `PatternKind`, `Match`, `Severity`, `ScanResult`) from `secretscout-types/src/lib.rs`
-- [ ] Port SecretScout scanner logic — `src/lib/scanner.ts` (regex / literal / entropy matching, suppression, dedup, cascade) from `secretscout-core/src/scanner.rs`
-- [ ] Port validator to TypeScript — `src/lib/validator.ts` (30+ providers: GitHub, Stripe, Slack, Anthropic, AWS…) from `secretscout-core/src/validator.rs`
-- [ ] Port `mask_secret` utility — `src/lib/masking.ts` (prefix/suffix reveal with `***` middle) from `secretscout-core/src/utils/masking.rs`
-- [ ] Port entropy module — `src/lib/entropy.ts` (Shannon entropy, charset detection, thresholds) from `secretscout-core/src/entropy.rs`
-- [ ] Unit-test scanner against fixture files — verify regex hits, entropy thresholds, suppression
-
----
-
-## Phase 2 — LangGraph AI Pipeline `Week 2`
-
-- [ ] Upgrade `pipeline.ts` to spec — replace `SUSPICIOUS` with `NEEDS_HUMAN_REVIEW`; wire conditional edges per spec §4 graph wiring
-- [ ] Implement Node 1 — context gatherer: normalise matched text, annotate file extension + variable name from surrounding lines
-- [ ] Implement Node 2 — heuristic filter: `PLACEHOLDER_TERMS` list + low-entropy hex check; short-circuit to `FALSE_POSITIVE`
-- [ ] Implement Node 3 — external API validator: GitHub PAT, Slack webhook, Stripe, AWS STS SigV4; route `UNVERIFIABLE` → Node 4
-- [ ] Implement Node 4 — Workers AI LLM classifier: `@cf/meta/llama-3.1-8b-instruct`; chain-of-thought JSON prompt; confidence < 0.65 → `NEEDS_HUMAN_REVIEW`
-- [ ] Implement Node 5 — risk scorer: `SEVERITY_WEIGHT × VERDICT_MULTIPLIER`; update repo `risk_score` in D1
-- [ ] Add KV daily neuron quota guard — mirror ArxivExplorer `llm_quota:{date}` pattern; cap at 263 calls/day; fallback to `NEEDS_HUMAN_REVIEW`
-- [ ] Wire pipeline into scan worker handlers — plug `createScanValidationGraph` into `fetch` + `scheduled` in `src/scan-worker/index.ts`
-- [ ] Tune Llama prompt — iterate until valid JSON rate ≥ 95% across ≥ 50 test samples; log failures to KV
+- [x] D1 schema — `migrations/schema.sql` (5 tables: repositories, scan_runs, findings, ai_evaluations, scan_tokens)
+- [x] Seed `scan_tokens` script — `scripts/seed-tokens.ts` (SHA-256 hash + masked display, INSERT OR IGNORE)
+- [x] YAML → JSON pattern compiler — `scripts/compile-patterns.ts` (walks `secretscout/templates/**/*.yaml`, emits `src/scan-worker/patterns.json`)
+- [x] Built-in patterns stub — `src/scan-worker/patterns.json` (27 templates: GitHub PAT, Stripe, OpenAI, Anthropic, AWS, Slack, SendGrid, npm, PyPI, HuggingFace, Discord, Telegram, Cloudflare, Vercel, Netlify, Heroku, Datadog, Twilio, PEM keys, high-entropy generic)
+- [x] Zipball streaming scanner — `src/scan-worker/scanner.ts` (fflate Unzip, SKIP_EXTENSIONS, SKIP_DIRS, 1000-char line cap, token D1 helpers)
+- [x] TypeScript types — `src/lib/types.ts` (Template, Pattern, Match, Severity, Verdict, Env, risk helpers)
+- [x] Scanner logic — `src/lib/scanner.ts` (regex / literal / entropy / composite modes, suppression, dedup, SSH pub-key guard)
+- [x] Validator — `src/lib/validator.ts` (30+ providers: GitHub, Stripe, Slack, Anthropic, OpenAI, AWS, DigitalOcean, Mailchimp, Square, Datadog, NewRelic, npm, PyPI, DockerHub, Firebase, Algolia, Okta, Cloudflare, Heroku, Netlify, Vercel, Linear, Notion, Discord, Telegram…)
+- [x] Masking utility — `src/lib/masking.ts` (prefix/suffix reveal with `***` middle)
+- [x] Entropy module — `src/lib/entropy.ts` (Shannon entropy, charset detection, thresholds, `findHighEntropyStrings`)
 
 ---
 
-## Phase 3 — Dashboard `Week 3`
+## Phase 2 — LangGraph AI Pipeline ✅ `DONE`
 
-- [x] Copy `globals.css` from ArxivExplorer — terminal-green palette, `bg-grid`, glow classes, `card-scanlines`, `stagger-list`, shimmer; adapted for red/amber severity colours
-- [ ] Copy `tailwind.config.ts` tokens — `neon-green`, `dark-bg`, `font-mono`, `glow-pulse`, `dot-ping`, `count-slide`, `border-beam` animations
-- [ ] Copy `ParticleBackground.tsx` — Three.js particle rain; dual neon-green + neon-blue streams
-- [ ] Copy `DecryptedText.tsx` + hooks — `TextScrambler`, `useTextScramble`, `textAnimation.ts`; used for repo names + risk scores on load
-- [ ] Copy `ScrollProgress.tsx` — fixed top scan-line progress bar with neon-green glow
-- [ ] Build `app/layout.tsx` — JetBrains Mono font, `bg-grid`, radial neon glow, dark mode; ported from ArxivExplorer layout
-- [ ] Build hero strip — live counters: total repos, critical findings, analyst queue count, next scan HH:MM:SS countdown
-- [ ] Build `RepositoryRiskGrid` — cards sorted by `risk_score` desc; colour-coded risk meter; `TRUE_POSITIVE` / `NEEDS_HUMAN_REVIEW` badges
-- [ ] Build `FindingsInspector` panel — file path + GitHub blob link; masked value; code snippet with highlighted match line; AI verdict + reasoning
-- [ ] Build `AnalystQueue` — `/review` page listing all `NEEDS_HUMAN_REVIEW` sorted by severity; one-click triage; updates `analyst_reviewed = 1` in D1
-- [ ] Add `/api/trigger` route — manual scan trigger for dev; returns `scan_run` id + status
+- [x] 5-node LangGraph pipeline — `src/scan-worker/pipeline.ts`
+  - Node 1: Context Gatherer — normalises surrounding context
+  - Node 2: Heuristic Filter — placeholder terms + low-entropy hex; short-circuits to FALSE_POSITIVE
+  - Node 3: External API Validator — dispatches to 30+ provider validators; ACTIVE → TRUE_POSITIVE, REVOKED → FALSE_POSITIVE
+  - Node 4: Workers AI LLM Classifier — `@cf/meta/llama-3.1-8b-instruct`; confidence < 0.65 → NEEDS_HUMAN_REVIEW
+  - Node 5: Risk Scorer — `SEVERITY_WEIGHT × VERDICT_MULTIPLIER`
+- [x] Conditional edges — heuristic → skip API+LLM; API confirmed → skip LLM
+- [x] KV daily quota guard — `llm_quota:{date}` key; cap 263 calls/day; fallback NEEDS_HUMAN_REVIEW
+- [x] D1 persistence — `persistEvaluation()` with UPSERT on `finding_id`
+- [x] Scan worker entry — `src/scan-worker/index.ts` with round-robin token picking via `pickNextToken()`
 
 ---
 
-## Phase 4 — Deploy & Validate `Week 4`
+## Phase 3 — Dashboard ✅ `DONE`
 
-- [ ] Deploy scan worker — `wrangler deploy --config wrangler.scan.toml`; verify cron fires at `:00`
-- [ ] Deploy web app — `npm run pages:build && wrangler deploy --config wrangler.jsonc`; verify D1 + KV bindings resolve
-- [ ] Seed 3 test repositories — add one with a dummy PAT in a test branch; verify full pipeline hit
-- [ ] Verify end-to-end flow — pattern match → LangGraph → D1 → dashboard verdict display; check masked token rendering
-- [ ] Load-test token pool — simulate rate-limit exhaustion on all 7 tokens; verify fallback + queue behaviour
-- [ ] Seed GRAYHATWARFARE + URLSCAN keys — copy 18 GHW keys + 12 urlscan keys from `secretscout/.env` into D1 or `wrangler secret put`
-- [ ] Add PROTONVPN credentials — `wrangler secret put PROTONVPN_USERNAME` / `PROTONVPN_PASSWORD` for stealth scanning
+- [x] `globals.css` — terminal-green palette, `bg-grid`, glow classes, shimmer, badge variants
+- [x] `tailwind.config.ts` — `neon-green`, `neon-red`, `neon-amber`, `dark-bg`, all animations
+- [x] `ParticleBackground.tsx` — Three.js particle rain (20k movers, dual green + blue streams)
+- [x] `DecryptedText.tsx` + hooks — `TextScrambler`, `useTextScramble`, `textAnimation.ts`
+- [x] `ScrollProgress.tsx` — fixed neon scan-line progress bar
+- [x] `app/layout.tsx` — JetBrains Mono, `bg-grid`, radial neon glow, dark mode, security headers
+- [x] `app/page.tsx` — dashboard, `HeroStrip` + `RepositoryRiskGrid`
+- [x] `HeroStrip.tsx` — live counters (total repos, critical findings, analyst queue, next scan HH:MM:SS countdown)
+- [x] `RepositoryRiskGrid.tsx` — cards sorted by `risk_score` desc; colour-coded risk meter; DecryptedText on hover
+- [x] `Navbar.tsx` — sticky nav with Dashboard + Review Queue links, live scanning dot
+- [x] `app/repo/[id]/page.tsx` — FindingsInspector: severity groups, code snippet with highlighted hit line, masked token, AI reasoning, analyst override display
+- [x] `app/review/page.tsx` — AnalystQueue: all NEEDS_HUMAN_REVIEW sorted by severity, mini snippet, confidence bar
+- [x] `app/review/TriageButtons.tsx` — confirm leak / false positive buttons, optimistic done state
+- [x] `app/api/review/route.ts` — Edge route: validates evalId + verdict, calls `markAnalystReviewed()`
+- [x] `app/api/trigger/route.ts` — Edge route: Service Binding (SCAN_WORKER) → HTTP fallback (SCAN_WORKER_URL)
+- [x] `lib/db.ts` — D1 query helpers: `getDashboardStats`, `getRepositories`, `getFindingsForRepo`, `getAnalystQueue`, `markAnalystReviewed`, `getRecentScanRuns`
+
+---
+
+## Phase 4 — Deploy & Validate `TODO`
+
+Run in this order:
+
+```bash
+# 1. Install deps (three.js was added)
+npm install
+
+# 2. Push D1 schema to remote
+npm run db:migrate:remote
+
+# 3. Compile SecretScout YAML patterns into patterns.json
+#    (requires ../secretscout/templates/ to exist — or use the built-in stub)
+npm run compile-patterns
+
+# 4. Seed GitHub PATs from .env into D1 scan_tokens
+npm run db:seed-tokens:remote
+
+# 5. Seed repositories to monitor
+npm run db:seed-repos:remote
+#    → edit scripts/seed-repos.ts REPOS[] first
+
+# 6. Set wrangler secrets (raw PATs — never stored in D1 as-is)
+wrangler secret put GITHUB_TOKEN_1 --config wrangler.scan.toml
+# ... repeat for GITHUB_TOKEN_2..7
+
+# 7. Deploy scan worker first (web app service binding needs it)
+npm run deploy:scan
+
+# 8. Deploy web app
+npm run deploy
+
+# 9. Smoke-test
+curl -X POST https://reposcout-web.<account>.workers.dev/api/trigger
+```
+
+### Remaining checklist
+
+- [ ] `npm install` — pulls in `three@0.169.0` + `@types/three`
+- [ ] Run `npm run db:migrate:remote` — push 5-table schema to D1
+- [ ] Run `npm run compile-patterns` — regenerate `patterns.json` from real secretscout YAML templates (if `../secretscout/templates/` exists; otherwise the built-in stub covers 27 templates)
+- [ ] Set `GITHUB_TOKEN_1..n` wrangler secrets on scan worker
+- [ ] Edit `scripts/seed-repos.ts` REPOS[] — add the repos you want to monitor
+- [ ] Run `npm run db:seed-repos:remote`
+- [ ] Run `npm run db:seed-tokens:remote`
+- [ ] `npm run deploy:scan` — deploy scan worker
+- [ ] `npm run deploy` — build Next.js + deploy web app
+- [ ] Verify cron fires at `:00` (check Worker logs in Cloudflare dashboard)
+- [ ] Seed 1 test repo that has a dummy PAT in a branch — verify full pipeline hit end-to-end
+- [ ] Optionally seed GRAYHATWARFARE / URLSCAN keys via `wrangler secret put` (not yet wired to scanner)
+- [ ] Optionally set `PROTONVPN_USERNAME` / `PROTONVPN_PASSWORD` for stealth scanning
 
 ---
 
@@ -66,10 +114,10 @@
 
 ```
 Cron (hourly)
-  └── Scan Worker
-        ├── Pick GitHub PAT (round-robin, rate-limit-aware)
+  └── Scan Worker (reposcout-scan-worker)
+        ├── pickNextToken()  — D1 rate-limit-aware round-robin
         ├── Fetch repo zipball → fflate stream decompress
-        ├── Line-by-line regex/entropy match (SecretScout patterns)
+        ├── scanSource()     — regex / literal / entropy matching
         └── Each match → LangGraph 5-node pipeline
               ├── Node 1: Context Gatherer
               ├── Node 2: Heuristic Filter       → FALSE_POSITIVE (skip)
@@ -77,54 +125,20 @@ Cron (hourly)
               ├── Node 4: Workers AI LLM          → TRUE_POSITIVE / NEEDS_HUMAN_REVIEW
               └── Node 5: Risk Scorer             → write to D1
 
-Next.js Dashboard
+Next.js Dashboard (reposcout-web)
   ├── /            RepositoryRiskGrid (sorted by risk_score)
   ├── /repo/[id]   FindingsInspector
-  └── /review      AnalystQueue (NEEDS_HUMAN_REVIEW triage)
+  ├── /review      AnalystQueue (NEEDS_HUMAN_REVIEW triage)
+  ├── POST /api/trigger   → SCAN_WORKER service binding → scan worker
+  └── POST /api/review    → markAnalystReviewed() in D1
 ```
-
-## Verdict Logic
-
-| Verdict | Meaning | Multiplier |
-|---|---|---|
-| `TRUE_POSITIVE` | Confirmed live credential | 2.0 |
-| `NEEDS_HUMAN_REVIEW` | Ambiguous — analyst queue | 1.0 |
-| `FALSE_POSITIVE` | Placeholder / revoked | 0.0 |
-
-## Severity Weights
-
-| Severity | Weight |
-|---|---|
-| `critical` | 100 |
-| `high` | 40 |
-| `medium` | 15 |
-| `low` | 5 |
-| `info` | 1 |
-
-`risk_score = Σ (severity_weight × verdict_multiplier)` across all findings for a repo.
-
-## Key Files
-
-| File | Purpose |
-|---|---|
-| `src/scan-worker/index.ts` | Worker entry — `fetch` + `scheduled` handlers |
-| `src/scan-worker/scanner.ts` | Zipball streaming + pattern matching |
-| `src/scan-worker/pipeline.ts` | LangGraph 5-node AI verification |
-| `src/scan-worker/patterns.json` | Compiled SecretScout templates (build artifact) |
-| `src/lib/types.ts` | Shared types (Template, Match, Severity…) |
-| `src/lib/validator.ts` | External API credential checks |
-| `src/lib/entropy.ts` | Shannon entropy + charset detection |
-| `src/lib/masking.ts` | Secret masking utility |
-| `scripts/compile-patterns.ts` | YAML → JSON pattern compiler |
-| `migrations/schema.sql` | D1 schema (5 tables) |
-| `app/components/ParticleBackground.tsx` | Three.js particle rain |
-| `app/components/DecryptedText.tsx` | Scramble animation for repo names |
 
 ## Cloudflare Resources
 
-| Resource | Binding | ID |
-|---|---|---|
-| D1 Database | `DB` | `67fa825b-9f3e-478c-99d2-3e5cc1b0f3de` |
-| KV Namespace | `CACHE` | `ed3c323de9cc48a4b332beec939597a4` |
-| Workers AI | `AI` | — |
-| Account | — | `b1dea8ea21722d03763e3eff6ab8c5c1` |
+| Resource      | Binding       | ID                                      |
+|---------------|---------------|-----------------------------------------|
+| D1 Database   | `DB`          | `67fa825b-9f3e-478c-99d2-3e5cc1b0f3de` |
+| KV Namespace  | `CACHE`       | `ed3c323de9cc48a4b332beec939597a4`      |
+| Workers AI    | `AI`          | —                                       |
+| Service       | `SCAN_WORKER` | reposcout-scan-worker                   |
+| Account       | —             | `b1dea8ea21722d03763e3eff6ab8c5c1`      |

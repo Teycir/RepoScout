@@ -1,2 +1,27 @@
-node_modules
-.history
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build outputs
+.next/
+.open-next/
+dist/
+
+# Cloudflare
+.wrangler/
+
+# env — never commit real secrets
+.env
+.env.local
+.dev.vars
+
+# compiled patterns (build artifact — regenerate with compile-patterns)
+src/scan-worker/patterns.json
+
+# logs
+*.log
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db

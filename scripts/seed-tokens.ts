@@ -8,18 +8,11 @@
 import { createHash, randomUUID } from 'crypto';
 import { execSync } from 'child_process';
 import { writeFileSync, unlinkSync } from 'fs';
-import { config } from 'dotenv';
 
-config();
+// Load tokens from .env via the central env module
+import { GITHUB_TOKENS } from '../src/lib/env.js';
 
 const REMOTE = process.argv.includes('--remote');
-
-// Load tokens from environment variables
-const GITHUB_TOKENS: string[] = [];
-for (let i = 1; i <= 20; i++) {
-  const token = process.env[`GITHUB_TOKEN_${i}`];
-  if (token) GITHUB_TOKENS.push(token);
-}
 
 // ---------------------------------------------------------------------------
 // SQL helpers
@@ -42,6 +35,7 @@ const GITHUB_PAT_RE = /^(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82}|gho_[A-
 
 function validatePat(pat: string, index: number): void {
   if (!GITHUB_PAT_RE.test(pat)) {
+    // Don't print the token itself — show its position only
     throw new Error(
       `GITHUB_TOKEN_${index + 1} does not match a known GitHub PAT format. ` +
       `Expected ghp_..., github_pat_..., gho_..., ghs_..., or ghr_...`
@@ -74,19 +68,22 @@ if (GITHUB_TOKENS.length === 0) {
 
 // Validate all PAT formats before touching the database
 for (let i = 0; i < GITHUB_TOKENS.length; i++) {
-  validatePat(GITHUB_TOKENS[i]!, i);
+  validatePat(GITHUB_TOKENS[i]!, i); // throws on invalid format — fast-fail before any SQL
 }
 
 console.log(`\n🔑  Seeding ${GITHUB_TOKENS.length} PAT(s) into scan_tokens (${REMOTE ? 'remote' : 'local'} D1)\n`);
 
 const rows = GITHUB_TOKENS.map((pat) => ({
   id:           randomUUID(),
-  token_hash:   sha256(pat),
-  masked_token: maskToken(pat),
+  token_hash:   sha256(pat),        // hex — safe, but escaped defensively below
+  masked_token: maskToken(pat),     // alphanumeric + dots — escaped defensively below
 }));
 
 const values = rows
   .map((r) => {
+    // SHA-256 hex and masked tokens (ghp_xxxx...yyyy) are structurally safe,
+    // but we escape every interpolated value so this stays correct regardless
+    // of future changes to sha256/maskToken output format.
     const id    = sqlEscape(r.id);
     const hash  = sqlEscape(r.token_hash);
     const masked = sqlEscape(r.masked_token);

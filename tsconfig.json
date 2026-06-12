@@ -25,6 +25,7 @@
     "esModuleInterop": true
   },
   "include": [
+    "env.d.ts",
     "app/**/*.ts",
     "app/**/*.tsx",
     "lib/**/*.ts",

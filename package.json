@@ -11,8 +11,14 @@
     "pages:build": "opennextjs-cloudflare build",
     "deploy": "npm run pages:build && wrangler deploy --config wrangler.jsonc",
     "deploy:scan": "wrangler deploy --config wrangler.scan.toml",
-    "db:migrate": "wrangler d1 execute reposcout --file=migrations/schema.sql",
-    "db:migrate:remote": "wrangler d1 execute reposcout --remote --file=migrations/schema.sql"
+    "db:migrate": "wrangler d1 execute reposcout --file=migrations/schema.sql --config=wrangler.jsonc",
+    "db:migrate:remote": "wrangler d1 execute reposcout --remote --file=migrations/schema.sql --config=wrangler.jsonc",
+    "db:seed-tokens": "npx tsx scripts/seed-tokens.ts",
+    "db:seed-tokens:remote": "npx tsx scripts/seed-tokens.ts --remote",
+    "db:seed-repos": "npx tsx scripts/seed-repos.ts",
+    "db:seed-repos:remote": "npx tsx scripts/seed-repos.ts --remote",
+    "compile-patterns": "npx tsx scripts/compile-patterns.ts",
+    "compile-patterns:all": "npx tsx scripts/compile-patterns.ts --include-others"
   },
   "dependencies": {
     "@langchain/core": "^0.3.38",
@@ -25,18 +31,21 @@
     "next": "16.2.6",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "tailwind-merge": "^2.4.0"
+    "tailwind-merge": "^2.4.0",
+    "three": "^0.169.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241022.0",
     "@types/node": "^22.0.0",
-    "@types/react": "^18.3.30",
+    "@types/react": "18.3.31",
     "@types/react-dom": "^18.3.7",
+    "@types/three": "^0.169.0",
     "autoprefixer": "^10.5.0",
     "postcss": "^8.5.15",
     "tailwindcss": "^3.4.19",
     "tsx": "^4.22.3",
-    "typescript": "^5.8.2",
-    "wrangler": "^4.86.0"
+    "typescript": "5.9.3",
+    "wrangler": "^4.86.0",
+    "yaml": "^2.9.0"
   }
 }

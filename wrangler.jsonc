@@ -24,5 +24,25 @@
       "database_name": "reposcout",
       "database_id": "67fa825b-9f3e-478c-99d2-3e5cc1b0f3de"
     }
-  ]
+  ],
+
+  // Service binding to the scan worker — used by /api/trigger as Option A.
+  // If the scan worker is not deployed yet, remove this block and set
+  // SCAN_WORKER_URL in [vars] below as Option B.
+  "services": [
+    {
+      "binding": "SCAN_WORKER",
+      "service": "reposcout-scan-worker"
+    }
+  ],
+
+  "ai": {
+    "binding": "AI"
+  },
+
+  "vars": {
+    "SUMMARY_MODEL": "@cf/meta/llama-3.1-8b-instruct"
+    // Uncomment if not using service binding (Option B fallback):
+    // "SCAN_WORKER_URL": "https://reposcout-scan-worker.<account>.workers.dev"
+  }
 }
