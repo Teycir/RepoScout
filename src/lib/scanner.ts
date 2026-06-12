@@ -2,7 +2,7 @@
 // Port of secretscout-core/src/scanner.rs
 // Scans source text against compiled templates, returns masked Match objects.
 
-import type { Template, Match, Severity } from './types.js';
+import type { Template, Pattern, Match, Severity } from './types.js';
 import { maskSecret } from './masking.js';
 import {
   calculateEntropy,
@@ -211,7 +211,7 @@ function scanPattern(
   source:   string,
   lines:    string[],
   template: Template,
-  pattern:  { id: string; pattern: string; message: string; kind: string },
+  pattern:  Pattern,
 ): Match[] {
   const matches: Match[] = [];
 

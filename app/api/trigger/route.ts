@@ -5,8 +5,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { checkRateLimit, getClientIp, rateLimitedResponse } from '@/lib/rateLimit';
 
 export const runtime = 'edge';
+
+// No auth on this endpoint — it triggers GitHub API + zipball scans, so keep
+// the window strict. 1 request per 5 minutes per IP.
+const TRIGGER_LIMIT  = 1;
+const TRIGGER_WINDOW = 5 * 60; // seconds
 
 interface TriggerBody {
   repoId?:  string;   // optional — scan one repo; omit to scan all
@@ -22,6 +28,13 @@ export async function POST(req: NextRequest) {
     const ctx = await getCloudflareContext();
     env = ctx.env as unknown as Record<string, unknown>;
   } catch { /* dev: no CF context */ }
+
+  const cache = env['CACHE'] as KVNamespace | undefined;
+  if (cache) {
+    const ip = getClientIp(req);
+    const result = await checkRateLimit(cache, `trigger:${ip}`, TRIGGER_LIMIT, TRIGGER_WINDOW);
+    if (!result.ok) return rateLimitedResponse(result);
+  }
 
   // -- Option A: Workers Service Binding --
   const serviceBinding = env['SCAN_WORKER'] as {
