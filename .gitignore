@@ -6,6 +6,10 @@ node_modules/
 .next/
 .open-next/
 dist/
+tsconfig.tsbuildinfo
+
+# IDE
+.history/
 
 # Cloudflare
 .wrangler/
