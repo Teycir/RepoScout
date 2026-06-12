@@ -3,7 +3,7 @@ account_id = "b1dea8ea21722d03763e3eff6ab8c5c1"
 main = "src/scan-worker/index.ts"
 compatibility_date = "2025-05-01"
 compatibility_flags = ["nodejs_compat"]
-workers_dev = true
+workers_dev = false
 
 [triggers]
 crons = ["0 * * * *"]  # Runs every hour at :00 UTC
