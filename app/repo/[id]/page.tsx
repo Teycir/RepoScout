@@ -11,6 +11,8 @@ import {
   Download, Sparkles, Calendar, Info, SlidersHorizontal, EyeOff,
 } from 'lucide-react';
 import type { FindingWithEval } from '@/lib/db';
+import { BookmarkButton } from '@/app/components/BookmarkButton';
+import { ShareButton } from '@/app/components/ShareButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -675,6 +677,8 @@ export default function RepoDetailPage({ params }: { params: { id: string } }) {
               hover:bg-neon-red/10 hover:border-neon-red/35 hover:text-neon-red transition-all">
             <Download size={10} /> CSV
           </a>
+          <BookmarkButton repoId={id} variant="button" />
+          <ShareButton variant="button" />
         </div>
       </div>
 

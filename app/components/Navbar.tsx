@@ -1,9 +1,37 @@
 'use client';
-// app/components/Navbar.tsx — RepoScout adapted from ArxivExplorer
+// app/components/Navbar.tsx — RepoScout
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Shield, Activity, Users, AlertTriangle, BarChart2, Download } from 'lucide-react';
+import { Shield, Activity, AlertTriangle, BarChart2, Download, Bookmark } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { getBookmarks } from './BookmarkButton';
+
+function BookmarkCount() {
+  const [count,   setCount]   = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setCount(getBookmarks().length);
+    setMounted(true);
+    sync();
+    window.addEventListener('reposcout:bookmarks-changed', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('reposcout:bookmarks-changed', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  if (!mounted || count === 0) return null;
+
+  return (
+    <span className="ml-1 tabular-nums text-[8px] font-bold px-1 py-px rounded-full
+      bg-neon-amber/20 text-neon-amber border border-neon-amber/30 leading-none">
+      {count}
+    </span>
+  );
+}
 
 export function Navbar() {
   const pathname = usePathname();
@@ -13,6 +41,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-neon-red/10
       bg-dark-bg/80 backdrop-blur-md">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-6">
+
         {/* Logo */}
         <Link href="/" className="flex-shrink-0 flex items-center gap-2 group">
           <Shield size={16} className="text-neon-red group-hover:drop-shadow-[0_0_6px_#ff1a1a] transition-all" />
@@ -59,6 +88,21 @@ export function Navbar() {
             <BarChart2 size={12} />
             <span className="hidden sm:inline">Stats</span>
           </Link>
+
+          <Link
+            href="/bookmarks"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors
+              ${isActive('/bookmarks')
+                ? 'text-neon-amber bg-neon-amber/8'
+                : 'text-neon-red/40 hover:text-neon-amber/60'}`}
+          >
+            <Bookmark
+              size={12}
+              style={isActive('/bookmarks') ? { fill: '#ffaa00', stroke: '#ffaa00' } : {}}
+            />
+            <span className="hidden sm:inline">Bookmarks</span>
+            <BookmarkCount />
+          </Link>
         </div>
 
         {/* Spacer */}
@@ -81,6 +125,7 @@ export function Navbar() {
           </span>
           <span className="hidden sm:inline">scanning</span>
         </div>
+
       </div>
     </nav>
   );

@@ -7,6 +7,8 @@ import { AlertTriangle, CheckCircle, Clock, GitBranch } from 'lucide-react';
 import { riskLevel } from '@/src/lib/types';
 import type { RepoRow } from '@/lib/db';
 import DecryptedText from './DecryptedText';
+import { BookmarkButton } from './BookmarkButton';
+import { ShareButton } from './ShareButton';
 
 function RiskMeter({ score }: { score: number }) {
   const level = riskLevel(score);
@@ -80,7 +82,14 @@ function RepoCard({ repo }: { repo: RepoRow }) {
         <StatusDot status={repo.last_scan_status} />
       </div>
 
-      {/* Risk meter */}
+      {/* Action buttons row */}
+      <div className="flex items-center gap-1 mb-3 -mt-1 justify-end">
+        <BookmarkButton repoId={repo.id} variant="icon" />
+        <ShareButton
+          url={typeof window !== 'undefined' ? `${window.location.origin}/repo/${repo.id}` : `/repo/${repo.id}`}
+          variant="icon"
+        />
+      </div>
       <RiskMeter score={repo.risk_score} />
 
       {/* Severity badges */}
