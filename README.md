@@ -25,7 +25,7 @@ _Scan the QR code or copy the wallet address above._
 
 > AI-verified GitHub secret scanning dashboard, running entirely on Cloudflare's free tier.
 
-![License](https://img.shields.io/badge/license-BSL%201.1-00FF41?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-00FF41?style=for-the-badge)
 ![Framework](https://img.shields.io/badge/Framework-Next.js%2016-00FF41?style=for-the-badge)
 ![Hosting](https://img.shields.io/badge/Hosting-Cloudflare%20Workers-00FF41?style=for-the-badge)
 ![Database](https://img.shields.io/badge/Database-Cloudflare%20D1-00FF41?style=for-the-badge)
@@ -54,6 +54,7 @@ _Scan the QR code or copy the wallet address above._
 - [Configuration](#configuration)
 - [Database Schema](#database-schema)
 - [Security & Rate Limiting](#security--rate-limiting)
+- [Security Policy](#security-policy)
 - [Related Projects](#-related-projects)
 - [Services Offered](#-services-offered)
 - [License](#license)
@@ -411,7 +412,8 @@ curl -X POST https://reposcout-web.<account>.workers.dev/api/trigger
 │   ├── seed-tokens.ts            # hash + mask GITHUB_TOKEN_* into D1
 │   └── seed-repos.ts             # seed monitored repos
 ├── wrangler.jsonc                 # web app config
-└── wrangler.scan.toml              # scan worker config (hourly cron)
+├── wrangler.scan.toml              # scan worker config (hourly cron)
+└── SECURITY.md                     # security measures, rate limits, CORS policy, reporting
 ```
 
 ---
@@ -543,17 +545,25 @@ The canonical source of truth is [`migrations/schema.sql`](migrations/schema.sql
 
 ## Security & Rate Limiting
 
-RepoScout's API has **no authentication** by design — all endpoints are protected by a KV-backed fixed-window rate limiter (`lib/rateLimit.ts`) keyed on `cf-connecting-ip`:
+RepoScout's API has **no authentication** by design — all endpoints are protected by a layered abuse-prevention stack instead. The full reference, including the per-endpoint table, CORS policy, fail-closed behavior, and vulnerability reporting process, lives in **[SECURITY.md](SECURITY.md)**. Summary:
 
-| Endpoint                                                                                         | Limit            |
-| ------------------------------------------------------------------------------------------------ | ---------------- |
-| `POST /api/trigger`                                                                              | 1 / 5 min per IP |
-| `POST /api/review`                                                                               | 30 / min per IP  |
-| `GET /api/repos`, `/api/repos/:id/findings`, `/api/review-queue`, `/api/scan-runs`, `/api/stats` | 60 / min per IP  |
+| Endpoint                                                                                         | Per-IP Limit     | Global Limit  |
+| ------------------------------------------------------------------------------------------------ | ---------------- | ------------- |
+| `POST /api/trigger`                                                                              | 1 / 5 min        | 5 / 5 min     |
+| `POST /api/review`                                                                               | 30 / min         | 200 / min     |
+| `GET /api/repos`, `/api/repos/:id/findings`, `/api/review-queue`, `/api/scan-runs`, `/api/stats` | 60 / min         | —             |
 
-Rate-limited requests receive `429` with `Retry-After` and `RateLimit-*` headers. If the `CACHE` binding is unavailable (e.g. local dev without `wrangler`), routes degrade to unlimited rather than failing.
+- **Rate limiting** — KV-backed fixed-window limiter (`lib/rateLimit.ts`) keyed on `cf-connecting-ip` (Cloudflare-set, unspoofable). Rate-limited requests receive `429` with `Retry-After` and `RateLimit-*` headers.
+- **CORS** — write endpoints (`/api/review`, `/api/trigger`) reject cross-origin browser requests from origins outside `ALLOWED_ORIGINS` (`lib/validate.ts`) with `403`; read endpoints attach `Access-Control-Allow-Origin` only for allow-listed origins. All routes implement `OPTIONS` preflight.
+- **Input validation** — Content-Type/size checks, JSON-shape checks (anti prototype-pollution), UUID/enum validation on `/api/review`, type checks on `/api/trigger`'s body.
+- **Fail-closed** — if the `CACHE` (KV) binding is missing in production, every rate-limited route returns `503` rather than serving unrate-limited. Local dev without `wrangler` is the only exception.
+- **Secret hygiene** — `rawMatchedText` (the unmasked secret) only ever exists in the scan worker's in-memory pipeline state — it is never written to D1, never logged, and never returned by any API route. Only `maskSecret()` output (`ghp_xxxx...1234`) is persisted and displayed.
 
-`rawMatchedText` (the unmasked secret) only ever exists in the scan worker's in-memory pipeline state — it is never written to D1, never logged, and never returned by any API route. Only `maskSecret()` output (`ghp_xxxx...1234`) is persisted and displayed.
+---
+
+## Security Policy
+
+For the complete security model — threat model, the full endpoint-by-endpoint control matrix, HTTP security headers, secret-handling guarantees, and how to report a vulnerability — see **[SECURITY.md](SECURITY.md)**.
 
 ---
 
@@ -614,13 +624,9 @@ Explore more privacy-first and security tools:
 
 ## License
 
-This project is licensed under the **Business Source License 1.1 (BSL 1.1)**.
+This project is licensed under the **MIT License**.
 
-- ✅ Free for personal, academic, and non-commercial use
-- ❌ Commercial use requires a separate license
-- 📅 Converts to **MIT License** after the change date specified in `LICENSE`
-
-See `LICENSE` for full terms, or [contact the author](https://teycirbensoltane.tn) for commercial licensing.
+See `LICENSE` for full terms. Free for personal, academic, and commercial use.
 
 ---
 
