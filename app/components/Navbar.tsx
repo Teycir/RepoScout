@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Shield, Activity, Users, AlertTriangle } from 'lucide-react';
+import { Shield, Activity, Users, AlertTriangle, BarChart2, Download } from 'lucide-react';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -48,10 +48,30 @@ export function Navbar() {
             <AlertTriangle size={12} />
             <span className="hidden sm:inline">Review Queue</span>
           </Link>
+
+          <Link
+            href="/stats"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors
+              ${isActive('/stats')
+                ? 'text-neon-red bg-neon-red/8'
+                : 'text-neon-red/40 hover:text-neon-red/70'}`}
+          >
+            <BarChart2 size={12} />
+            <span className="hidden sm:inline">Stats</span>
+          </Link>
         </div>
 
         {/* Spacer */}
         <div className="flex-1" />
+
+        {/* Global report download */}
+        <a href="/api/report?format=csv"
+          className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded
+            border border-neon-red/15 text-neon-red/30 hover:text-neon-red/60
+            hover:border-neon-red/30 transition-all">
+          <Download size={10} />
+          report
+        </a>
 
         {/* Status indicator */}
         <div className="flex items-center gap-1.5 text-[10px] font-mono text-neon-red/30">

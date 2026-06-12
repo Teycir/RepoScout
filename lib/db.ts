@@ -286,6 +286,123 @@ export async function markAnalystReviewed(
 }
 
 // ---------------------------------------------------------------------------
+// Rich stats for the /stats page
+// ---------------------------------------------------------------------------
+
+export interface SeverityStats {
+  severity: string;
+  total: number;
+  true_positives: number;
+  false_positives: number;
+  needs_review: number;
+}
+
+export interface VerdictStats {
+  true_positives:   number;
+  false_positives:  number;
+  needs_review:     number;
+  pending:          number;
+  analyst_reviewed: number;
+}
+
+export interface TopRiskyRepo {
+  id:          string;
+  owner:       string;
+  name:        string;
+  risk_score:  number;
+  critical:    number;
+  high:        number;
+}
+
+export interface ScanTrend {
+  date:            string;
+  total_findings:  number;
+  true_positives:  number;
+  false_positives: number;
+}
+
+export interface FullStats {
+  severity:   SeverityStats[];
+  verdicts:   VerdictStats;
+  topRepos:   TopRiskyRepo[];
+  scanTrends: ScanTrend[];
+  totalFindings: number;
+  totalRepos:    number;
+  scansRun:      number;
+}
+
+export async function getFullStats(db: D1Database): Promise<FullStats> {
+  const [severityRows, verdictRow, topRepoRows, trendRows, totals] = await Promise.all([
+    // Severity breakdown with verdict splits
+    db.prepare(`
+      SELECT f.severity,
+             COUNT(*) AS total,
+             SUM(CASE WHEN COALESCE(e.analyst_verdict, e.verdict) = 'TRUE_POSITIVE'      THEN 1 ELSE 0 END) AS true_positives,
+             SUM(CASE WHEN COALESCE(e.analyst_verdict, e.verdict) = 'FALSE_POSITIVE'     THEN 1 ELSE 0 END) AS false_positives,
+             SUM(CASE WHEN COALESCE(e.analyst_verdict, e.verdict) = 'NEEDS_HUMAN_REVIEW' THEN 1 ELSE 0 END) AS needs_review
+      FROM findings f
+      LEFT JOIN ai_evaluations e ON e.finding_id = f.id
+      GROUP BY f.severity
+      ORDER BY CASE f.severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2
+                               WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END
+    `).all<SeverityStats>(),
+
+    // Global verdict counts
+    db.prepare(`
+      SELECT
+        SUM(CASE WHEN COALESCE(e.analyst_verdict, e.verdict) = 'TRUE_POSITIVE'      THEN 1 ELSE 0 END) AS true_positives,
+        SUM(CASE WHEN COALESCE(e.analyst_verdict, e.verdict) = 'FALSE_POSITIVE'     THEN 1 ELSE 0 END) AS false_positives,
+        SUM(CASE WHEN COALESCE(e.analyst_verdict, e.verdict) = 'NEEDS_HUMAN_REVIEW' THEN 1 ELSE 0 END) AS needs_review,
+        SUM(CASE WHEN e.id IS NULL                                                   THEN 1 ELSE 0 END) AS pending,
+        SUM(CASE WHEN e.analyst_reviewed = 1                                         THEN 1 ELSE 0 END) AS analyst_reviewed
+      FROM findings f
+      LEFT JOIN ai_evaluations e ON e.finding_id = f.id
+    `).first<VerdictStats>(),
+
+    // Top 10 repos by risk score
+    db.prepare(`
+      SELECT id, owner, name, risk_score,
+             critical_severity_findings AS critical,
+             high_severity_findings     AS high
+      FROM repositories
+      ORDER BY risk_score DESC
+      LIMIT 10
+    `).all<TopRiskyRepo>(),
+
+    // Last 14 scan-run trend points
+    db.prepare(`
+      SELECT DATE(started_at) AS date,
+             SUM(total_findings)  AS total_findings,
+             SUM(true_positives)  AS true_positives,
+             SUM(false_positives) AS false_positives
+      FROM scan_runs
+      WHERE status = 'COMPLETED'
+      GROUP BY DATE(started_at)
+      ORDER BY date DESC
+      LIMIT 14
+    `).all<ScanTrend>(),
+
+    // Totals
+    db.prepare(`
+      SELECT
+        (SELECT COUNT(*) FROM findings)      AS totalFindings,
+        (SELECT COUNT(*) FROM repositories)  AS totalRepos,
+        (SELECT COUNT(*) FROM scan_runs WHERE status = 'COMPLETED') AS scansRun
+    `).first<{ totalFindings: number; totalRepos: number; scansRun: number }>(),
+  ]);
+
+  return {
+    severity:      severityRows.results,
+    verdicts:      verdictRow ?? { true_positives: 0, false_positives: 0, needs_review: 0, pending: 0, analyst_reviewed: 0 },
+    topRepos:      topRepoRows.results,
+    scanTrends:    trendRows.results.reverse(), // oldest → newest for chart
+    totalFindings: totals?.totalFindings ?? 0,
+    totalRepos:    totals?.totalRepos    ?? 0,
+    scansRun:      totals?.scansRun      ?? 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Recent scan runs
 // ---------------------------------------------------------------------------
 

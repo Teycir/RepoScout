@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getFindingsForRepo } from "@/lib/db";
 import type { FindingWithEval } from "@/lib/db";
-import { ArrowLeft, ExternalLink, CheckCircle, HelpCircle } from "lucide-react";
+import { ArrowLeft, ExternalLink, CheckCircle, HelpCircle, Download } from "lucide-react";
 
 export const runtime = "edge";
 export const revalidate = 30;
@@ -388,14 +388,35 @@ export default async function RepoDetailPage({ params }: PageProps) {
 
   return (
     <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-neon-red/40 hover:text-neon-red/70
-          text-xs font-mono mb-6 transition-colors"
-      >
-        <ArrowLeft size={11} />
-        back to dashboard
-      </Link>
+      {/* Top bar */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-neon-red/40 hover:text-neon-red/70
+            text-xs font-mono transition-colors"
+        >
+          <ArrowLeft size={11} />
+          back to dashboard
+        </Link>
+
+        {/* Download buttons */}
+        <div className="flex items-center gap-2">
+          <a href={`/api/report?repo=${id}&format=json`}
+            className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded
+              border border-neon-red/20 text-neon-red/50 bg-neon-red/5
+              hover:bg-neon-red/10 hover:border-neon-red/35 hover:text-neon-red transition-all">
+            <Download size={10} />
+            JSON
+          </a>
+          <a href={`/api/report?repo=${id}&format=csv`}
+            className="flex items-center gap-1.5 text-[10px] font-mono px-3 py-1.5 rounded
+              border border-neon-red/20 text-neon-red/50 bg-neon-red/5
+              hover:bg-neon-red/10 hover:border-neon-red/35 hover:text-neon-red transition-all">
+            <Download size={10} />
+            CSV
+          </a>
+        </div>
+      </div>
 
       {findings.length === 0 ? (
         <div className="border border-neon-red/10 rounded-lg p-12 text-center">
