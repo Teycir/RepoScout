@@ -4,7 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getRepositories } from '@/lib/db';
-import { checkRateLimit, getClientIp, rateLimitedResponse } from '@/lib/rateLimit';
+import { checkRateLimit, getClientIp, rateLimitedResponse, missingCacheResponse } from '@/lib/rateLimit';
+import { corsHeaders, handlePreflight, ALLOWED_ORIGINS } from '@/lib/validate';
 
 export const runtime = 'edge';
 
@@ -21,7 +22,12 @@ export async function GET(req: NextRequest) {
       const ip = getClientIp(req);
       const result = await checkRateLimit(cache, `repos:${ip}`, READ_LIMIT, READ_WINDOW);
       if (!result.ok) return rateLimitedResponse(result);
+    } else if (env.DB) {
+      // CF context present (prod) but CACHE binding missing → misconfiguration.
+      // Fail closed rather than serving an unrate-limited D1 query.
+      return missingCacheResponse(true)!;
     }
+    // else: no CF context at all → local dev, allow through.
 
     const limitParam = req.nextUrl.searchParams.get('limit');
     let limit = limitParam ? parseInt(limitParam, 10) : 50;
@@ -29,9 +35,13 @@ export async function GET(req: NextRequest) {
     if (limit > MAX_LIMIT) limit = MAX_LIMIT;
 
     const repos = await getRepositories(env.DB, limit);
-    return NextResponse.json({ repos });
+    return NextResponse.json({ repos }, { headers: corsHeaders(req, ALLOWED_ORIGINS) });
   } catch (err) {
     console.error('[api/repos]', err);
     return NextResponse.json({ error: 'D1 query failed' }, { status: 500 });
   }
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return handlePreflight(req, ALLOWED_ORIGINS, ['GET', 'OPTIONS']);
 }

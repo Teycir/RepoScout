@@ -43,6 +43,22 @@ export async function checkRateLimit(
 }
 
 /**
+ * Global (cross-IP) rate limit — guards against distributed burst from many
+ * IPs hitting the same expensive endpoint simultaneously.
+ *
+ * Uses a single shared KV key per route+window, so all IPs combined cannot
+ * exceed `limit` requests within `windowSeconds`.
+ */
+export async function checkGlobalRateLimit(
+  cache: KVNamespace,
+  route: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<RateLimitResult> {
+  return checkRateLimit(cache, `global:${route}`, limit, windowSeconds);
+}
+
+/**
  * Best-effort client identifier for Cloudflare-fronted requests.
  * cf-connecting-ip is set by Cloudflare's edge and isn't spoofable by clients
  * (Cloudflare overwrites it), unlike x-forwarded-for.
@@ -71,5 +87,20 @@ export function rateLimitedResponse(result: RateLimitResult): Response {
         'RateLimit-Reset':     String(result.resetAt),
       },
     },
+  );
+}
+
+/**
+ * Enforce rate limits when CACHE is unavailable (dev / misconfigured deploy).
+ * Fail closed for ALL endpoints in production — a missing KV binding means
+ * the abuse-prevention layer is gone, and "fail open" turns a config mistake
+ * into an unrate-limited API. Local dev (no CF context) is the only intended
+ * exception, handled separately by callers via the `hasCfContext` check.
+ */
+export function missingCacheResponse(failClosed: boolean): Response | null {
+  if (!failClosed) return null;
+  return Response.json(
+    { error: 'Service temporarily unavailable' },
+    { status: 503 },
   );
 }

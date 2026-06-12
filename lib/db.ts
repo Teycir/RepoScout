@@ -254,14 +254,16 @@ export async function markAnalystReviewed(
   db: D1Database,
   evalId: string,
   verdict: Verdict,
-): Promise<void> {
+): Promise<boolean> {
   // Step 1: stamp the override on the evaluation row
-  await db
+  const update = await db
     .prepare(
       `UPDATE ai_evaluations SET analyst_reviewed = 1, analyst_verdict = ? WHERE id = ?`,
     )
     .bind(verdict, evalId)
     .run();
+
+  if (update.meta.changes === 0) return false; // evalId doesn't exist
 
   // Step 2: look up which repo owns this finding so we can resync its cached
   // counters. analyst_verdict supersedes verdict for display and risk purposes,
@@ -277,9 +279,10 @@ export async function markAnalystReviewed(
     .bind(evalId)
     .first<{ repo_id: string }>();
 
-  if (!row) return; // orphaned eval — nothing to resync
+  if (!row) return true; // orphaned eval — update succeeded, nothing to resync
 
   await recalculateRepoMetrics(db, row.repo_id);
+  return true;
 }
 
 // ---------------------------------------------------------------------------

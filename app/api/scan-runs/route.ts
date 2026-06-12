@@ -4,7 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getRecentScanRuns } from '@/lib/db';
-import { checkRateLimit, getClientIp, rateLimitedResponse } from '@/lib/rateLimit';
+import { checkRateLimit, getClientIp, rateLimitedResponse, missingCacheResponse } from '@/lib/rateLimit';
+import { corsHeaders, handlePreflight, ALLOWED_ORIGINS } from '@/lib/validate';
 
 export const runtime = 'edge';
 
@@ -21,7 +22,12 @@ export async function GET(req: NextRequest) {
       const ip = getClientIp(req);
       const result = await checkRateLimit(cache, `scan-runs:${ip}`, READ_LIMIT, READ_WINDOW);
       if (!result.ok) return rateLimitedResponse(result);
+    } else if (env.DB) {
+      // CF context present (prod) but CACHE binding missing → misconfiguration.
+      // Fail closed rather than serving an unrate-limited D1 query.
+      return missingCacheResponse(true)!;
     }
+    // else: no CF context at all → local dev, allow through.
 
     const limitParam = req.nextUrl.searchParams.get('limit');
     let limit = limitParam ? parseInt(limitParam, 10) : 10;
@@ -29,9 +35,18 @@ export async function GET(req: NextRequest) {
     if (limit > MAX_LIMIT) limit = MAX_LIMIT;
 
     const runs = await getRecentScanRuns(env.DB, limit);
-    return NextResponse.json({ runs });
+    return NextResponse.json({ runs }, { headers: corsHeaders(req, ALLOWED_ORIGINS) });
   } catch (err) {
     console.error('[api/scan-runs]', err);
     return NextResponse.json({ error: 'D1 query failed' }, { status: 500 });
   }
+}
+
+// This OPTIONS handler responds to preflight CORS requests from browsers.
+// When a cross-origin request is made, browsers first send an OPTIONS request
+// to check if the actual request is allowed. This handler uses the handlePreflight
+// utility to validate the origin against ALLOWED_ORIGINS and specify which HTTP
+// methods (GET, OPTIONS) are permitted for this endpoint.
+export async function OPTIONS(req: NextRequest) {
+  return handlePreflight(req, ALLOWED_ORIGINS, ['GET', 'OPTIONS']);
 }
