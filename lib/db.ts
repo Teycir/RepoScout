@@ -67,6 +67,9 @@ export interface FindingWithEval extends FindingRow {
   eval: EvalRow | null;
   repo_owner: string;
   repo_name: string;
+  /** Number of completed scan runs that have occurred since this finding was first detected.
+   *  Computed by the DB query: used to drive the NEW tag (new = scans_since_detected <= 6). */
+  scans_since_detected: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -147,7 +150,12 @@ export async function getFindingsForRepo(
       `SELECT f.*, e.id as eval_id, e.verdict, e.confidence, e.validation_method,
               e.validation_status, e.reasoning, e.external_response, e.evaluated_at,
               e.analyst_reviewed, e.analyst_verdict,
-              r.owner as repo_owner, r.name as repo_name
+              r.owner as repo_owner, r.name as repo_name,
+              (
+                SELECT COUNT(*) FROM scan_runs s
+                WHERE s.status = 'COMPLETED'
+                  AND s.completed_at > f.detected_at
+              ) AS scans_since_detected
        FROM findings f
        JOIN repositories r ON r.id = f.repo_id
        LEFT JOIN ai_evaluations e ON e.finding_id = f.id
@@ -176,7 +184,12 @@ export async function getAnalystQueue(
       `SELECT f.*, e.id as eval_id, e.verdict, e.confidence, e.validation_method,
               e.validation_status, e.reasoning, e.external_response, e.evaluated_at,
               e.analyst_reviewed, e.analyst_verdict,
-              r.owner as repo_owner, r.name as repo_name
+              r.owner as repo_owner, r.name as repo_name,
+              (
+                SELECT COUNT(*) FROM scan_runs s
+                WHERE s.status = 'COMPLETED'
+                  AND s.completed_at > f.detected_at
+              ) AS scans_since_detected
        FROM findings f
        JOIN repositories r ON r.id = f.repo_id
        LEFT JOIN ai_evaluations e ON e.finding_id = f.id
@@ -459,6 +472,7 @@ function reshapeWithEval(row: any): FindingWithEval {
     detected_at: row.detected_at,
     repo_owner: row.repo_owner,
     repo_name: row.repo_name,
+    scans_since_detected: row.scans_since_detected ?? 0,
     eval: evalRow,
   };
 }

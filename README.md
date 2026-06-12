@@ -72,7 +72,7 @@ Unlike traditional regex-based scanners that flood security teams with false pos
 
 - **Smart Context Analysis** — AI examines surrounding code to understand whether a match is a real credential or test data
 - **Live Credential Testing** — Automated API validation against 30+ provider endpoints (GitHub, AWS, Stripe, Slack, Anthropic, OpenAI, and more)
-- **LLM-Powered Classification** — For ambiguous cases, `@cf/meta/llama-3.1-8b-instruct` analyzes the full context and delivers confidence-scored verdicts
+- **LLM-Powered Classification** — For ambiguous cases, `@cf/mistralai/mistral-small-3.1-24b-instruct` (24B params) analyzes the full context and delivers confidence-scored verdicts
 - **Adaptive Routing** — LangGraph's conditional edges route findings through validation paths based on credential type, entropy, and context
 
 ### Three-Verdict System
@@ -152,12 +152,12 @@ The heart of RepoScout — a **5-node intelligent state machine** that transform
 - **Heuristic Pre-filtering** — Instantly dismisses obvious placeholders (`xxxx`, `dummy`, `your_key`) and low-entropy patterns
 - **30+ Provider Live Testing** — Real-time API validation against GitHub, GitLab, AWS, Stripe, Slack, Anthropic, OpenAI, HuggingFace, SendGrid, Twilio, Shopify, DigitalOcean, Mailchimp, Square, Datadog, NewRelic, npm, PyPI, DockerHub, Cloudflare, Heroku, Netlify, Vercel, Linear, Notion, Discord, Telegram, Dropbox, Twitch, Zoom, Asana, Mailgun, Sentry, Airtable, PayPal
 - **RSA Proof-of-Possession** — Private keys validated via `crypto.subtle` sign+verify (no network call needed)
-- **LLM Classification** — `@cf/meta/llama-3.1-8b-instruct` analyzes unverifiable findings with confidence scoring
+- **LLM Classification** — `@cf/mistralai/mistral-small-3.1-24b-instruct` (24B params) analyzes unverifiable findings with confidence scoring
 - **AWS Pair Reconstruction** — reconstructs AWS key pairs from surrounding context and validates live via STS `GetCallerIdentity`, converting permanently-unverifiable findings into real verdicts without burning LLM quota
 - **Context Inference** — for providers that need extra parameters (Shopify shop domain, Algolia app ID, Firebase project, Okta domain, Braintree env), the LLM extracts the missing value from surrounding code and retries the API validator
 - **Impact & Blast-Radius Summary** — every confirmed `TRUE_POSITIVE` gets an AI-generated plain-English summary: what access the credential grants, what data is reachable, and the single most important remediation step
 - **Conditional Routing** — Findings route through different validation paths based on credential type and initial analysis
-- **Daily Quota Management** — KV-backed limiter caps LLM usage at 10 000 calls/day (full Workers AI free tier), evenly distributed across 3 daily runs (~3 333/run)
+- **Daily Quota Management** — KV-backed limiter caps LLM calls at 450/day (~21 neurons/call × 450 = ~9 450 neurons, within the 10 000 free tier ceiling); ~150 calls per run across 3 daily runs
 
 ### Scanning Engine
 
@@ -197,7 +197,7 @@ The heart of RepoScout — a **5-node intelligent state machine** that transform
 
 Built entirely on Cloudflare's edge platform with **AI-first design**:
 
-- **AI Verification Core**: LangGraph.js `StateGraph` with 8 specialized nodes + Cloudflare Workers AI (`@cf/meta/llama-3.1-8b-instruct`)
+- **AI Verification Core**: LangGraph.js `StateGraph` with 8 specialized nodes + Cloudflare Workers AI (`@cf/mistralai/mistral-small-3.1-24b-instruct`)
 - **Frontend**: Next.js 16 App Router, deployed as a Cloudflare Worker (via OpenNext `main` + `assets`)
 - **Scan Worker**: Separate Cloudflare Worker (`reposcout-scan-worker`), 3×/day cron (00:00, 08:00, 16:00 UTC) + manual `/api/trigger`
 - **Database**: Cloudflare D1 (SQLite) — 5 tables: `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens`
@@ -225,7 +225,7 @@ graph TD
         N3b -->|pair found & verified| N5
         N3b -->|no pair| N3c[Node 3c: Context Inference]
         N3c -->|context resolved| N5
-        N3c -->|still unverifiable| N4["Node 4: Workers AI LLM<br/>(Llama 3.1 8B)"]
+        N3c -->|still unverifiable| N4["Node 4: Workers AI LLM<br/>(Mistral Small 3.1 24B)"]
         N4 --> N5
         N5 -->|TRUE_POSITIVE| N5b[Node 5b: Impact Summary]
         N5 -->|other verdicts| Done[Save to D1]
@@ -276,7 +276,7 @@ export function createScanValidationGraph(env: PipelineEnv) {
 | 3. External API Validator | Live-tests the credential against its provider (30+ supported) | `ACTIVE` → `TRUE_POSITIVE` · `REVOKED` → `FALSE_POSITIVE` · `UNVERIFIABLE` → Node 3b |
 | 3b. AWS Pair Reconstruction | Scans context for paired secret key, runs STS `GetCallerIdentity` | `ACTIVE`/`REVOKED` without LLM quota · no pair → Node 3c |
 | 3c. Context Inference | LLM extracts missing provider param (shop domain, app ID, project…) then retries API | Resolved → skip LLM · still unverifiable → Node 4 |
-| 4. Workers AI LLM Classifier | `@cf/meta/llama-3.1-8b-instruct`, only for still-unverifiable findings | confidence < 0.50 → `NEEDS_HUMAN_REVIEW` |
+| 4. Workers AI LLM Classifier | `@cf/mistralai/mistral-small-3.1-24b-instruct` (24B params, ~21 neurons/call), only for still-unverifiable findings | confidence < 0.50 → `NEEDS_HUMAN_REVIEW` |
 | 5. Risk Scorer | `SeverityWeight × VerdictMultiplier` | writes `riskScore` to D1 |
 | 5b. Impact Summary | AI-generated access/blast-radius/remediation note, only for `TRUE_POSITIVE` | appends `[Impact]` block to `aiReasoning` |
 
@@ -518,7 +518,7 @@ wrangler secret put GITHUB_TOKEN_1 --config wrangler.scan.toml
 | --------------- | ------------- | ----------------------------------------------------------------------------------- |
 | D1 Database     | `DB`          | 5 tables — `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens` |
 | KV Namespace    | `CACHE`       | LLM quota (`llm_quota:{date}`) + rate limiting (`ratelimit:*`)                      |
-| Workers AI      | `AI`          | `@cf/meta/llama-3.1-8b-instruct` for nodes 3c, 4, and 5b classification        |
+| Workers AI      | `AI`          | `@cf/mistralai/mistral-small-3.1-24b-instruct` for nodes 3c, 4, and 5b classification        |
 | Service Binding | `SCAN_WORKER` | `reposcout-scan-worker` — used by `/api/trigger`                                    |
 
 ---

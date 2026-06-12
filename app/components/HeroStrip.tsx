@@ -1,9 +1,9 @@
 'use client';
 // app/components/HeroStrip.tsx
-// Live counters: total repos, critical findings, analyst queue, next scan countdown.
+// Live counters: total repos, critical findings, analyst queue, scan timing.
 
 import { useEffect, useState } from 'react';
-import { Shield, AlertTriangle, Clock, Users } from 'lucide-react';
+import { Shield, AlertTriangle, Clock, Users, CalendarClock } from 'lucide-react';
 import type { DashboardStats } from '@/lib/db';
 
 function CounterCard({
@@ -29,34 +29,84 @@ function CounterCard({
   );
 }
 
-function NextScanCountdown({ lastScanAt }: { lastScanAt: string | null }) {
-  const [timeLeft, setTimeLeft] = useState('--:--:--');
+/** Format a UTC ISO string to a short local date+time, e.g. "12 Jun · 08:04" */
+function formatScanDate(iso: string): string {
+  const d = new Date(iso);
+  const day = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  const time = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  return `${day} · ${time}`;
+}
+
+/** Returns "Xm ago", "Xh ago", or "Xd ago" relative to now */
+function relativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins  = Math.floor(diffMs / 60_000);
+  if (mins < 60)  return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function ScanTimingCard({ lastScanAt }: { lastScanAt: string | null }) {
+  const [nextLeft, setNextLeft] = useState('--:--:--');
+  const [relAge,   setRelAge]   = useState<string | null>(null);
 
   useEffect(() => {
-    function compute() {
-      // Cron fires at :00 every hour
-      const now = new Date();
-      const next = new Date(now);
-      next.setMinutes(0, 0, 0);
-      next.setHours(next.getHours() + 1);
-      const diffMs = next.getTime() - now.getTime();
-      const hh = Math.floor(diffMs / 3_600_000).toString().padStart(2, '0');
-      const mm = Math.floor((diffMs % 3_600_000) / 60_000).toString().padStart(2, '0');
-      const ss = Math.floor((diffMs % 60_000) / 1_000).toString().padStart(2, '0');
-      setTimeLeft(`${hh}:${mm}:${ss}`);
+    function tick() {
+      // --- next scan countdown (cron fires at :00 every 8 h: 00, 08, 16 UTC) ---
+      const now  = new Date();
+      const utcH = now.getUTCHours();
+      const nextH = utcH < 8 ? 8 : utcH < 16 ? 16 : 24; // next boundary in UTC hours
+      const next = new Date(Date.UTC(
+        now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+        nextH % 24, 0, 0, 0,
+      ));
+      if (nextH === 24) next.setUTCDate(next.getUTCDate() + 1);
+      const diff  = next.getTime() - now.getTime();
+      const hh    = Math.floor(diff / 3_600_000).toString().padStart(2, '0');
+      const mm    = Math.floor((diff % 3_600_000) / 60_000).toString().padStart(2, '0');
+      const ss    = Math.floor((diff % 60_000) / 1_000).toString().padStart(2, '0');
+      setNextLeft(`${hh}:${mm}:${ss}`);
+
+      // --- relative age of last scan ---
+      if (lastScanAt) setRelAge(relativeTime(lastScanAt));
     }
-    compute();
-    const id = setInterval(compute, 1_000);
+    tick();
+    const id = setInterval(tick, 1_000);
     return () => clearInterval(id);
-  }, []);
+  }, [lastScanAt]);
+
+  const formattedDate = lastScanAt ? formatScanDate(lastScanAt) : null;
 
   return (
-    <div className="flex flex-col gap-1 border border-neon-red/20 bg-neon-red/5 rounded px-4 py-3 text-neon-red">
-      <div className="flex items-center gap-2 text-[10px] opacity-60 uppercase tracking-widest">
-        <Clock size={10} />
-        next scan
+    <div className="flex flex-col border border-neon-red/20 bg-neon-red/5 rounded px-4 py-3 text-neon-red gap-2">
+      {/* ── Last scan ── */}
+      <div>
+        <div className="flex items-center gap-1.5 text-[10px] opacity-60 uppercase tracking-widest mb-0.5">
+          <CalendarClock size={10} />
+          last scan
+        </div>
+        {formattedDate ? (
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-semibold font-mono leading-tight">{formattedDate}</span>
+            <span className="text-[11px] opacity-50 font-mono">{relAge}</span>
+          </div>
+        ) : (
+          <span className="text-sm opacity-40 font-mono">never</span>
+        )}
       </div>
-      <div className="text-2xl font-bold tabular-nums font-mono">{timeLeft}</div>
+
+      {/* ── divider ── */}
+      <div className="border-t border-neon-red/15" />
+
+      {/* ── Next scan countdown ── */}
+      <div>
+        <div className="flex items-center gap-1.5 text-[10px] opacity-60 uppercase tracking-widest mb-0.5">
+          <Clock size={10} />
+          next scan
+        </div>
+        <div className="text-xl font-bold tabular-nums font-mono leading-tight">{nextLeft}</div>
+      </div>
     </div>
   );
 }
@@ -94,7 +144,7 @@ export function HeroStrip({ stats }: { stats: DashboardStats }) {
           icon={Users}
           color="amber"
         />
-        <NextScanCountdown lastScanAt={stats.lastScanAt} />
+        <ScanTimingCard lastScanAt={stats.lastScanAt} />
       </div>
     </section>
   );

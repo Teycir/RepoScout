@@ -50,11 +50,15 @@ export const ScanFindingState = Annotation.Root({
 type StateType = typeof ScanFindingState.State;
 
 // ---------------------------------------------------------------------------
-// KV quota guard — mirrors ArxivExplorer llm_quota:{date} pattern
-// Cap: 10 000 LLM calls/day — Workers AI free tier ceiling (3 runs/day @ ~3 333/run)
+// KV quota guard
+// Model: @cf/mistralai/mistral-small-3.1-24b-instruct
+// Neuron cost: ~31 876/M input + ~50 488/M output tokens
+// Per call estimate: ~400 input + ~150 output tokens ≈ 21 neurons/call
+// Free tier: 10 000 neurons/day → ~476 calls/day across 3 runs ≈ 158/run
+// Cap set conservatively at 450 to leave headroom for context-inference calls
 // ---------------------------------------------------------------------------
 
-const LLM_DAILY_CAP = 10_000;
+const LLM_DAILY_CAP = 450;
 
 async function checkLlmQuota(cache: KVNamespace): Promise<boolean> {
   const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -314,7 +318,7 @@ async function contextInferenceNode(
   const quotaOk = await checkLlmQuota(env.CACHE);
   if (!quotaOk) return {};
 
-  const model = env.SUMMARY_MODEL ?? "@cf/meta/llama-3.1-8b-instruct";
+  const model = env.SUMMARY_MODEL ?? "@cf/mistralai/mistral-small-3.1-24b-instruct";
 
   const providerHints: Record<string, string> = {
     shopify:   "Extract the Shopify shop domain (e.g. mystore.myshopify.com) from the surrounding code.",
@@ -410,7 +414,7 @@ async function llmClassificationNode(
     };
   }
 
-  const model = env.SUMMARY_MODEL ?? "@cf/meta/llama-3.1-8b-instruct";
+  const model = env.SUMMARY_MODEL ?? "@cf/mistralai/mistral-small-3.1-24b-instruct";
   const prompt = `You are an expert security auditor. Analyze the following finding and determine if it is a TRUE_POSITIVE (real exposed credential), FALSE_POSITIVE (test/mock/doc), or NEEDS_HUMAN_REVIEW (ambiguous).
 
 REPOSITORY: ${state.repoName}
@@ -546,7 +550,7 @@ async function impactSummaryNode(
   const quotaOk = await checkLlmQuota(env.CACHE);
   if (!quotaOk) return {};
 
-  const model = env.SUMMARY_MODEL ?? "@cf/meta/llama-3.1-8b-instruct";
+  const model = env.SUMMARY_MODEL ?? "@cf/mistralai/mistral-small-3.1-24b-instruct";
 
   try {
     const response = await (env.AI as any).run(model, {
