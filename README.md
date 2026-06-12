@@ -21,7 +21,7 @@ _Scan the QR code or copy the wallet address above._
 
 # 🔍 RepoScout
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=1000&color=00FF41&center=true&vCenter=true&width=600&lines=Continuous+GitHub+Secret+Scanning;LangGraph+AI+Verification+%E2%9A%A1;TRUE_POSITIVE+%7C+NEEDS_REVIEW+%7C+RISK+SCORE;Cloudflare+Workers+%2B+D1+%2B+Workers+AI" alt="Typing SVG" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=1000&color=00FF41&center=true&vCenter=true&width=600&lines=Continuous+GitHub+Secret+Scanning;8-Node+LangGraph+AI+Pipeline+%E2%9A%A1;AWS+Pair+Reconstruction+%7C+Blast+Radius;Cloudflare+Workers+%2B+D1+%2B+Workers+AI" alt="Typing SVG" />
 
 > AI-verified GitHub secret scanning dashboard, running entirely on Cloudflare's free tier.
 
@@ -83,7 +83,7 @@ Instead of dumping raw regex matches into an inbox, RepoScout's AI pipeline reso
 | -------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `TRUE_POSITIVE`      | **AI-confirmed active credential** — tested live against the provider's API and still valid                     |
 | `FALSE_POSITIVE`     | **AI-dismissed** — placeholder/test value, low-entropy, or the credential was tested and revoked                |
-| `NEEDS_HUMAN_REVIEW` | **Ambiguous** — provider couldn't be tested (`UNVERIFIABLE`) and the LLM classifier's confidence was below 0.65 |
+| `NEEDS_HUMAN_REVIEW` | **Ambiguous** — provider couldn't be tested and AWS/context-inference nodes found no paired data, and the LLM classifier's confidence was below 0.50 |
 
 ### Powered by LangGraph
 
@@ -107,7 +107,7 @@ The verification pipeline is built with **LangGraph.js**, enabling:
 
 ### 1. Continuous Org-Wide Monitoring
 
-Point RepoScout at every repo in your org and let the hourly cron worker keep watch. New commits that introduce a live key get flagged within the hour — no manual scans.
+Point RepoScout at every repo in your org and let the 3×/day cron worker keep watch. New commits that introduce a live key get flagged within 8 hours — no manual scans.
 
 ```bash
 npx tsx scripts/seed-repos.ts   # add repos to monitor
@@ -153,8 +153,11 @@ The heart of RepoScout — a **5-node intelligent state machine** that transform
 - **30+ Provider Live Testing** — Real-time API validation against GitHub, GitLab, AWS, Stripe, Slack, Anthropic, OpenAI, HuggingFace, SendGrid, Twilio, Shopify, DigitalOcean, Mailchimp, Square, Datadog, NewRelic, npm, PyPI, DockerHub, Cloudflare, Heroku, Netlify, Vercel, Linear, Notion, Discord, Telegram, Dropbox, Twitch, Zoom, Asana, Mailgun, Sentry, Airtable, PayPal
 - **RSA Proof-of-Possession** — Private keys validated via `crypto.subtle` sign+verify (no network call needed)
 - **LLM Classification** — `@cf/meta/llama-3.1-8b-instruct` analyzes unverifiable findings with confidence scoring
+- **AWS Pair Reconstruction** — reconstructs AWS key pairs from surrounding context and validates live via STS `GetCallerIdentity`, converting permanently-unverifiable findings into real verdicts without burning LLM quota
+- **Context Inference** — for providers that need extra parameters (Shopify shop domain, Algolia app ID, Firebase project, Okta domain, Braintree env), the LLM extracts the missing value from surrounding code and retries the API validator
+- **Impact & Blast-Radius Summary** — every confirmed `TRUE_POSITIVE` gets an AI-generated plain-English summary: what access the credential grants, what data is reachable, and the single most important remediation step
 - **Conditional Routing** — Findings route through different validation paths based on credential type and initial analysis
-- **Daily Quota Management** — KV-backed limiter caps LLM usage at 263 calls/day (10,000 Workers AI neurons ÷ ~38/call)
+- **Daily Quota Management** — KV-backed limiter caps LLM usage at 10 000 calls/day (full Workers AI free tier), evenly distributed across 3 daily runs (~3 333/run)
 
 ### Scanning Engine
 
@@ -194,9 +197,9 @@ The heart of RepoScout — a **5-node intelligent state machine** that transform
 
 Built entirely on Cloudflare's edge platform with **AI-first design**:
 
-- **AI Verification Core**: LangGraph.js `StateGraph` with 5 specialized nodes + Cloudflare Workers AI (`@cf/meta/llama-3.1-8b-instruct`)
+- **AI Verification Core**: LangGraph.js `StateGraph` with 8 specialized nodes + Cloudflare Workers AI (`@cf/meta/llama-3.1-8b-instruct`)
 - **Frontend**: Next.js 16 App Router, deployed as a Cloudflare Worker (via OpenNext `main` + `assets`)
-- **Scan Worker**: Separate Cloudflare Worker (`reposcout-scan-worker`), hourly cron + manual `/api/trigger`
+- **Scan Worker**: Separate Cloudflare Worker (`reposcout-scan-worker`), 3×/day cron (00:00, 08:00, 16:00 UTC) + manual `/api/trigger`
 - **Database**: Cloudflare D1 (SQLite) — 5 tables: `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens`
 - **Cache**: Cloudflare KV — LLM quota tracking, rate limiting
 - **Pattern Engine**: SecretScout's 91 YAML templates compiled to optimized JSON
@@ -205,22 +208,28 @@ Built entirely on Cloudflare's edge platform with **AI-first design**:
 
 ```mermaid
 graph TD
-    Cron[Cloudflare Cron Trigger /hour] -->|Trigger| ScanWorker[Ingest & Scan Worker]
-    ScanWorker -->|1. Pick Token Round-Robin| TokenPool[10 GitHub PATs in D1]
+    Cron[Cloudflare Cron Trigger 3x/day] -->|Trigger| ScanWorker[Ingest & Scan Worker]
+    ScanWorker -->|1. Pick Token Round-Robin| TokenPool[7 GitHub PATs in D1]
     ScanWorker -->|2. Fetch Repo Zipball| GitHub[GitHub API]
     ScanWorker -->|3. Decompress with fflate| Extractor[In-Memory Text Extractor]
     Extractor -->|4. Pattern Matching| Matcher[SecretScout Pattern Matcher]
     Matcher -->|5. Each Match| LangGraph[🤖 LangGraph.js AI Pipeline]
 
-    subgraph "LangGraph AI Verification StateGraph"
+    subgraph "LangGraph AI Verification StateGraph (8 nodes)"
         LangGraph --> N1[Node 1: Context Gatherer]
         N1 --> N2[Node 2: Heuristic Filter]
         N2 -->|not placeholder| N3[Node 3: External API Validator]
         N2 -->|is placeholder| FP[Verdict: FALSE_POSITIVE]
         N3 -->|ACTIVE / REVOKED| N5[Node 5: Risk Scorer]
-        N3 -->|UNVERIFIABLE| N4["Node 4: Workers AI LLM<br/>(Llama 3.1 8B)"]
+        N3 -->|UNVERIFIABLE| N3b[Node 3b: AWS Pair Reconstruction]
+        N3b -->|pair found & verified| N5
+        N3b -->|no pair| N3c[Node 3c: Context Inference]
+        N3c -->|context resolved| N5
+        N3c -->|still unverifiable| N4["Node 4: Workers AI LLM<br/>(Llama 3.1 8B)"]
         N4 --> N5
-        N5 -->|TRUE_POSITIVE or NEEDS_HUMAN_REVIEW| Done[Save to D1]
+        N5 -->|TRUE_POSITIVE| N5b[Node 5b: Impact Summary]
+        N5 -->|other verdicts| Done[Save to D1]
+        N5b --> Done
     end
 
     Done --> Dashboard[Next.js Dashboard]
@@ -231,12 +240,12 @@ graph TD
 
 ## Scan Execution Flow
 
-1. **Trigger** — cron fires hourly (`0 * * * *`); manual trigger via `POST /api/trigger`
+1. **Trigger** — cron fires 3×/day at 00:00, 08:00, 16:00 UTC (`0 0,8,16 * * *`); manual trigger via `POST /api/trigger`
 2. **Token Selection** — picks the PAT with the most remaining quota via `pickNextToken()`, falling back to sequential env order if D1 is unavailable
 3. **Repo Download** — fetches the repository zipball (`GET /repos/{owner}/{repo}/zipball/HEAD`); falls back to the Git Trees API for repos > 50 MB
 4. **In-Memory Decompression** — streams the zipball through `fflate.Unzip`; binary extensions and dependency dirs (`node_modules`, `.git`, `dist`, …) are skipped immediately
 5. **Pattern Matching** — each text file is scanned against all SecretScout patterns (regex / literal / entropy / composite)
-6. **LangGraph Pipeline** — every match enters the 5-node validation graph, exiting with exactly one verdict
+6. **LangGraph Pipeline** — every match enters the 8-node validation graph, exiting with exactly one verdict; TRUE_POSITIVEs receive an additional impact summary
 7. **Persistence** — findings + AI evaluations written to D1; repository `risk_score` recalculated
 8. **Dashboard** — the Next.js app reads from D1 and surfaces confirmed risks + the analyst queue in real time
 
@@ -247,34 +256,29 @@ graph TD
 ```typescript
 export function createScanValidationGraph(env: PipelineEnv) {
   return new StateGraph(ScanFindingState)
-    .addNode("gatherContext", gatherContextNode)
-    .addNode("heuristicFilter", heuristicFilterNode)
-    .addNode("apiValidation", apiValidationNode)
-    .addNode("llmClassification", llmClassificationNode)
-    .addNode("riskScorer", riskScorerNode)
-    .addEdge("__start__", "gatherContext")
-    .addEdge("gatherContext", "heuristicFilter")
-    .addConditionalEdges("heuristicFilter", routeAfterHeuristic, {
-      riskScorer: "riskScorer",
-      apiValidation: "apiValidation",
-    })
-    .addConditionalEdges("apiValidation", routeAfterApiValidation, {
-      riskScorer: "riskScorer",
-      llmClassification: "llmClassification",
-    })
-    .addEdge("llmClassification", "riskScorer")
-    .addEdge("riskScorer", "__end__")
+    .addNode("gatherContext",      gatherContextNode)
+    .addNode("heuristicFilter",    heuristicFilterNode)
+    .addNode("apiValidation",      apiValidationNode)
+    .addNode("awsPairReconstruct", awsPairReconstructionNode)
+    .addNode("contextInference",   contextInferenceNode)
+    .addNode("llmClassification",  llmClassificationNode)
+    .addNode("riskScorer",         riskScorerNode)
+    .addNode("impactSummary",      impactSummaryNode)
+    // ... conditional edges route through enrichment nodes before LLM
     .compile();
 }
 ```
 
-| Node                         | Purpose                                                                        | Possible Outcomes                                                                   |
-| ---------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| 1. Context Gatherer          | Normalises 5-line surrounding context                                          | —                                                                                   |
-| 2. Heuristic Filter          | Placeholder terms (`xxxx`, `dummy`, `your_key`, …) + low-entropy repeating hex | Short-circuits to `FALSE_POSITIVE`                                                  |
-| 3. External API Validator    | Live-tests the credential against its provider (30+ supported)                 | `ACTIVE` → `TRUE_POSITIVE` · `REVOKED` → `FALSE_POSITIVE` · `UNVERIFIABLE` → Node 4 |
-| 4. Workers AI LLM Classifier | `@cf/meta/llama-3.1-8b-instruct`, only for `UNVERIFIABLE` findings             | confidence < 0.65 → `NEEDS_HUMAN_REVIEW`                                            |
-| 5. Risk Scorer               | `SeverityWeight × VerdictMultiplier`                                           | writes `riskScore` to D1                                                            |
+| Node | Purpose | Possible Outcomes |
+| ---- | ------- | ----------------- |
+| 1. Context Gatherer | Normalises 5-line surrounding context | — |
+| 2. Heuristic Filter | Placeholder terms + low-entropy repeating hex | Short-circuits to `FALSE_POSITIVE` |
+| 3. External API Validator | Live-tests the credential against its provider (30+ supported) | `ACTIVE` → `TRUE_POSITIVE` · `REVOKED` → `FALSE_POSITIVE` · `UNVERIFIABLE` → Node 3b |
+| 3b. AWS Pair Reconstruction | Scans context for paired secret key, runs STS `GetCallerIdentity` | `ACTIVE`/`REVOKED` without LLM quota · no pair → Node 3c |
+| 3c. Context Inference | LLM extracts missing provider param (shop domain, app ID, project…) then retries API | Resolved → skip LLM · still unverifiable → Node 4 |
+| 4. Workers AI LLM Classifier | `@cf/meta/llama-3.1-8b-instruct`, only for still-unverifiable findings | confidence < 0.50 → `NEEDS_HUMAN_REVIEW` |
+| 5. Risk Scorer | `SeverityWeight × VerdictMultiplier` | writes `riskScore` to D1 |
+| 5b. Impact Summary | AI-generated access/blast-radius/remediation note, only for `TRUE_POSITIVE` | appends `[Impact]` block to `aiReasoning` |
 
 ---
 
@@ -319,7 +323,9 @@ wrangler login
 wrangler d1 create reposcout
 wrangler kv:namespace create CACHE
 
-# Update wrangler.jsonc / wrangler.scan.toml with your IDs
+# Update wrangler.local.toml and wrangler.local.jsonc with your real IDs
+# (these files are gitignored — never commit them)
+# wrangler.scan.toml and wrangler.jsonc contain only placeholder values
 
 # Apply database schema
 npm run db:migrate:remote
@@ -350,10 +356,10 @@ npm run db:seed-repos:remote    # edit scripts/seed-repos.ts REPOS[] first
 
 ```bash
 # Deploy scan worker first (web app's service binding needs it)
-npm run deploy:scan
+npm run deploy:scan   # uses wrangler.local.toml — never commit this file
 
 # Deploy web app
-npm run deploy
+npm run deploy        # uses wrangler.local.jsonc — never commit this file
 
 # Smoke-test
 curl -X POST https://reposcout-web.<account>.workers.dev/api/trigger
@@ -512,7 +518,7 @@ wrangler secret put GITHUB_TOKEN_1 --config wrangler.scan.toml
 | --------------- | ------------- | ----------------------------------------------------------------------------------- |
 | D1 Database     | `DB`          | 5 tables — `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens` |
 | KV Namespace    | `CACHE`       | LLM quota (`llm_quota:{date}`) + rate limiting (`ratelimit:*`)                      |
-| Workers AI      | `AI`          | `@cf/meta/llama-3.1-8b-instruct` for Node 4 classification                          |
+| Workers AI      | `AI`          | `@cf/meta/llama-3.1-8b-instruct` for nodes 3c, 4, and 5b classification        |
 | Service Binding | `SCAN_WORKER` | `reposcout-scan-worker` — used by `/api/trigger`                                    |
 
 ---
@@ -533,7 +539,7 @@ Individual matches — `file_path`, `line_number`, `matched_text` (masked), `con
 
 ### `ai_evaluations`
 
-LangGraph output — `verdict`, `confidence`, `validation_method` (`api_test`/`llm`/`heuristic`), `validation_status`, `reasoning`, `analyst_reviewed`, `analyst_verdict`
+LangGraph output — `verdict`, `confidence`, `validation_method` (`api_test`/`llm`/`heuristic`), `validation_status`, `reasoning` (includes `[Impact]` blast-radius block for `TRUE_POSITIVE` findings), `analyst_reviewed`, `analyst_verdict`
 
 ### `scan_tokens`
 

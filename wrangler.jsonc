@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "reposcout-web",
-  "account_id": "b1dea8ea21722d03763e3eff6ab8c5c1",
+  "account_id": "YOUR_CLOUDFLARE_ACCOUNT_ID",
   "main": ".open-next/worker.js",
   "compatibility_date": "2025-05-01",
   "compatibility_flags": ["nodejs_compat"],
@@ -14,7 +14,7 @@
   "kv_namespaces": [
     {
       "binding": "CACHE",
-      "id": "ed3c323de9cc48a4b332beec939597a4"
+      "id": "YOUR_KV_NAMESPACE_ID"
     }
   ],
 
@@ -22,7 +22,7 @@
     {
       "binding": "DB",
       "database_name": "reposcout",
-      "database_id": "67fa825b-9f3e-478c-99d2-3e5cc1b0f3de"
+      "database_id": "YOUR_D1_DATABASE_ID"
     }
   ],
 

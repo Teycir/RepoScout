@@ -1,21 +1,21 @@
 name = "reposcout-scan-worker"
-account_id = "b1dea8ea21722d03763e3eff6ab8c5c1"
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
 main = "src/scan-worker/index.ts"
 compatibility_date = "2025-05-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = false
 
 [triggers]
-crons = ["0 * * * *"]  # Runs every hour at :00 UTC
+crons = ["0 0,8,16 * * *"]  # Runs at 00:00, 08:00, 16:00 UTC (3x/day)
 
 [[d1_databases]]
 binding = "DB"
 database_name = "reposcout"
-database_id = "67fa825b-9f3e-478c-99d2-3e5cc1b0f3de"
+database_id = "YOUR_D1_DATABASE_ID"
 
 [[kv_namespaces]]
 binding = "CACHE"
-id = "ed3c323de9cc48a4b332beec939597a4"
+id = "YOUR_KV_NAMESPACE_ID"
 
 [ai]
 binding = "AI"

@@ -19,6 +19,10 @@ tsconfig.tsbuildinfo
 .env.local
 .dev.vars
 
+# Wrangler local overrides — contain real account/resource IDs
+wrangler.local.toml
+wrangler.local.jsonc
+
 # compiled patterns (build artifact — regenerate with compile-patterns)
 src/scan-worker/patterns.json
 
