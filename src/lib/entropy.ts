@@ -9,9 +9,9 @@ export type Charset = 'base64' | 'hex' | 'alphanumeric' | 'mixed';
 // ---------------------------------------------------------------------------
 
 export function detectCharset(s: string): Charset {
+  if (isHexLike(s))    return 'hex';            // pure hex digits: check before base64/alnum
+  if (/^[a-zA-Z0-9]+$/.test(s)) return 'alphanumeric';  // no special chars → not base64
   if (isBase64Like(s)) return 'base64';
-  if (isHexLike(s))    return 'hex';
-  if (/^[a-zA-Z0-9]+$/.test(s)) return 'alphanumeric';
   return 'mixed';
 }
 

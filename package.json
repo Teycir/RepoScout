@@ -18,7 +18,9 @@
     "db:seed-repos": "npx tsx scripts/seed-repos.ts",
     "db:seed-repos:remote": "npx tsx scripts/seed-repos.ts --remote",
     "compile-patterns": "npx tsx scripts/compile-patterns.ts",
-    "compile-patterns:all": "npx tsx scripts/compile-patterns.ts --include-others"
+    "compile-patterns:all": "npx tsx scripts/compile-patterns.ts --include-others",
+    "test:e2e": "NODE_NO_WARNINGS=1 npx tsx --test tests/engine.e2e.test.ts",
+    "test:local-e2e": "NODE_NO_WARNINGS=1 npx tsx tests/local-e2e.ts"
   },
   "dependencies": {
     "@langchain/core": "^0.3.38",
@@ -36,11 +38,13 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241022.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.0.0",
     "@types/react": "18.3.31",
     "@types/react-dom": "^18.3.7",
     "@types/three": "^0.169.0",
     "autoprefixer": "^10.5.0",
+    "better-sqlite3": "^12.10.0",
     "postcss": "^8.5.15",
     "tailwindcss": "^3.4.19",
     "tsx": "^4.22.3",

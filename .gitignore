@@ -30,6 +30,14 @@ src/scan-worker/patterns.json
 *.log
 /tmp/
 
+# SQLite temp files
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# tests
+tests/
+
 # OS
 .DS_Store
 Thumbs.db
