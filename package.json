@@ -20,7 +20,9 @@
     "compile-patterns": "npx tsx scripts/compile-patterns.ts",
     "compile-patterns:all": "npx tsx scripts/compile-patterns.ts --include-others",
     "test:e2e": "NODE_NO_WARNINGS=1 npx tsx --test tests/engine.e2e.test.ts",
-    "test:local-e2e": "NODE_NO_WARNINGS=1 npx tsx tests/local-e2e.ts"
+    "test:local-e2e": "NODE_NO_WARNINGS=1 npx tsx tests/local-e2e.ts",
+    "test:crawler": "NODE_NO_WARNINGS=1 npx tsx tests/crawler-e2e.ts",
+    "test:full-e2e": "NODE_NO_WARNINGS=1 npx tsx tests/full-e2e-verification.ts"
   },
   "dependencies": {
     "@langchain/core": "^0.3.38",

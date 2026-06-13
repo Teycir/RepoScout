@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-06-13T18:41:57.019Z",
+  "summary": {
+    "repos_discovered": 2,
+    "repos_scanned": 2,
+    "total_findings": 22,
+    "true_positives": 0,
+    "needs_review": 20,
+    "false_positives": 0
+  },
+  "workflow": {
+    "crawler_ran": true,
+    "scanner_ran": true,
+    "pipeline_ran": true,
+    "report_generated": true
+  }
+}

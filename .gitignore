@@ -35,8 +35,11 @@ src/scan-worker/patterns.json
 *.sqlite-shm
 *.sqlite-wal
 
-# tests
-tests/
+# Test artifacts (keep test source files)
+tests/node_modules/
+tests/*.sqlite
+tests/*.sqlite-shm
+tests/*.sqlite-wal
 
 # OS
 .DS_Store

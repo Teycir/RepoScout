@@ -35,7 +35,7 @@ const KV_RUNID_KEY        = 'crawler:last_run_id';
 
 // Topics / languages we actively want to scan — leave empty to scan everything.
 // Having at least a language filter helps surface real code repos over mirrors.
-const SEARCH_QUALIFIERS   = 'is:public -is:fork -is:archived language:JavaScript OR language:TypeScript OR language:Python OR language:Go OR language:Java OR language:Ruby OR language:PHP OR language:C OR language:C++ OR language:Rust OR language:Kotlin OR language:Swift';
+const SEARCH_QUALIFIERS   = 'is:public -is:fork -is:archived (language:JavaScript OR language:TypeScript OR language:Python OR language:Go OR language:Java OR language:Ruby OR language:PHP OR language:Rust OR language:Kotlin OR language:Swift)';
 
 // ---------------------------------------------------------------------------
 // GitHub API types (minimal shape we need)
