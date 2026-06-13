@@ -23,7 +23,8 @@
     "test:local-e2e": "NODE_NO_WARNINGS=1 npx tsx tests/local-e2e.ts",
     "test:crawler": "NODE_NO_WARNINGS=1 npx tsx tests/crawler-e2e.ts",
     "test:full-e2e": "NODE_NO_WARNINGS=1 npx tsx tests/full-e2e-verification.ts",
-    "test:crawler-stress": "NODE_NO_WARNINGS=1 npx tsx tests/crawler-stress-test.ts"
+    "test:crawler-stress": "NODE_NO_WARNINGS=1 npx tsx tests/crawler-stress-test.ts",
+    "test:window-opt": "NODE_NO_WARNINGS=1 npx tsx tests/crawler-window-optimizer.ts"
   },
   "dependencies": {
     "@langchain/core": "^0.3.38",
