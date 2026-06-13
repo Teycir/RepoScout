@@ -112,7 +112,7 @@ The verification pipeline is built with **LangGraph.js**, enabling:
 
 ### Technology Stack
 
-- **Pattern Engine**: Reuses **[SecretScout](https://github.com/Teycir/secretscout)**'s 91 YAML templates (regex + literal + entropy + composite modes)
+- **Pattern Engine**: Reuses SecretScout-compatible 91 YAML templates (regex + literal + entropy + composite modes)
 - **AI Pipeline**: LangGraph.js 5-node StateGraph with Cloudflare Workers AI
 - **Infrastructure**: 100% Cloudflare free tier (Workers, D1, KV, Pages)
 - **UI Design**: Cyberpunk terminal-green aesthetic ported from **[ArxivExplorer](https://github.com/Teycir/ArxivExplorer)**
@@ -612,7 +612,6 @@ Explore more privacy-first and security tools:
 
 ### This Project's Origin
 
-- **[secretscout](https://github.com/Teycir/secretscout)** - High-performance Rust CLI secret scanner. 91 YAML templates, secret validation, SARIF output, desktop app, token pool (8 PATs).
 
 ### Security Tools
 
@@ -669,7 +668,7 @@ See `LICENSE` for full terms. Free for personal, academic, and commercial use.
 
 ## Acknowledgments
 
-- [SecretScout](https://github.com/Teycir/secretscout) for the YAML pattern templates, masking utility, entropy module, and provider validator logic this project ports to TypeScript
+- SecretScout pattern templates, masking utility, entropy module, and provider validator logic ported to TypeScript
 - [ArxivExplorer](https://github.com/Teycir/ArxivExplorer) for `ParticleBackground`, `BackgroundBeams`, `DecryptedText`, the terminal-green Tailwind tokens, and the `*-cli` AI-assistant CLI pattern
 - [Cloudflare](https://cloudflare.com) for D1, KV, Workers AI, and the edge platform this entire project runs on
 - [LangChain](https://github.com/langchain-ai/langgraphjs) for LangGraph.js, powering the 5-node verification pipeline

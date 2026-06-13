@@ -195,7 +195,6 @@ async function main() {
   // Small, well-known public repos with test/fixture secrets — ideal for e2e
   const TARGET_REPOS = [
     { owner: 'trufflesecurity', repo: 'test_keys'  },  // dense fixture credentials
-    { owner: 'Teycir',          repo: 'secretscout' }, // our own — exercises many patterns
     { owner: 'gitleaks',        repo: 'gitleaks'    }, // gitleaks rule tests
   ];
 
