@@ -20,6 +20,12 @@ const MAX_FILE_BYTES       = 10 * 1024 * 1024;  // 10 MB per file
 const LARGE_REPO_KB        = 50_000;             // 50 MB in KB (GitHub repo.size unit)
 const TREE_BATCH_SIZE      = 5;                  // concurrent blob fetches
 
+// Per-request timeout, ported from secretscout-core's GitHubFetcher
+// (Client::builder().timeout(Duration::from_secs(30))). Without this, a
+// slow/stalled connection on the zipball or tree fetch hangs the scan
+// indefinitely with no error and no progress.
+const REQUEST_TIMEOUT_MS   = 30_000;
+
 const BINARY_EXTS = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.svg',
   '.woff', '.woff2', '.ttf', '.eot', '.pdf', '.zip',
@@ -126,6 +132,7 @@ async function githubGet(
       'User-Agent':   'RepoScout-Scanner/1.0',
       Accept:         'application/vnd.github.v3+json',
     },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!res.ok) {
     throw new Error(`GitHub API ${path} → HTTP ${res.status}`);
@@ -158,6 +165,7 @@ async function scanViaZipball(
       Accept:        'application/vnd.github.v3+json',
     },
     redirect: 'follow',
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
   // Capture rate-limit headers from the initial (pre-redirect) response.
@@ -230,8 +238,27 @@ async function scanViaZipball(
 
     const reader = res.body!.getReader();
 
+    // Stall guard for the streaming read loop, ported from secretscout-server's
+    // scan stall watchdog (SCAN_STALL_TIMEOUT). AbortSignal.timeout() on the
+    // initial fetch() only covers connect + headers — once the body stream
+    // is open, an individual reader.read() can hang indefinitely on a slow
+    // or dead connection with no error surfaced. Race each read against a
+    // timeout so a stalled stream fails fast instead of hanging the scan.
+    function readWithTimeout(): Promise<ReadableStreamReadResult<Uint8Array>> {
+      return new Promise((res2, rej2) => {
+        const timer = setTimeout(
+          () => rej2(new Error(`stream stalled — no data for ${REQUEST_TIMEOUT_MS}ms`)),
+          REQUEST_TIMEOUT_MS,
+        );
+        reader.read().then(
+          (r) => { clearTimeout(timer); res2(r); },
+          (e) => { clearTimeout(timer); rej2(e); },
+        );
+      });
+    }
+
     function pump(): void {
-      reader.read().then(({ done, value }) => {
+      readWithTimeout().then(({ done, value }) => {
         if (done) {
           unzip.push(new Uint8Array(0), true);
           resolve();
@@ -245,7 +272,13 @@ async function scanViaZipball(
         }
         unzip.push(value!);
         pump();
-      }).catch(reject);
+      }).catch((e) => {
+        errors.push(`${owner}/${repo}: zipball stream error — ${e}`);
+        reader.cancel().catch(() => undefined);
+        // Resolve (not reject) so a stalled stream degrades to "0 matches,
+        // 1 error" for this commit rather than aborting the whole scan run.
+        resolve();
+      });
     }
 
     pump();

@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS scan_tokens (
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_repositories_risk      ON repositories(risk_score DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_repositories_slug ON repositories(owner, name);
 
 -- Dedup guard: the same secret (same repo/file/line/pattern/masked text) must
 -- not accumulate duplicate rows across repeated scans. crypto.randomUUID()
@@ -91,3 +92,4 @@ CREATE INDEX IF NOT EXISTS idx_findings_severity       ON findings(severity);
 CREATE INDEX IF NOT EXISTS idx_evaluations_verdict     ON ai_evaluations(verdict);
 CREATE INDEX IF NOT EXISTS idx_evaluations_reviewed    ON ai_evaluations(analyst_reviewed);
 CREATE INDEX IF NOT EXISTS idx_tokens_active           ON scan_tokens(is_active, rate_limit_remaining DESC);
+

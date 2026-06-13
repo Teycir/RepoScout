@@ -1,0 +1,77 @@
+{
+  "timestamp": "2026-06-13T20:57:10.609Z",
+  "elapsedSec": 43.4,
+  "config": {
+    "lookbackHours": 24,
+    "maxReposToScan": 3,
+    "commitsPerRepo": 5,
+    "maxFindingsLlm": 10,
+    "ollamaModel": "gemma4:latest"
+  },
+  "crawl": {
+    "discovered": 117,
+    "updated": 0,
+    "eligible": 117
+  },
+  "scan": {
+    "reposScanned": 3,
+    "filesScanned": 101,
+    "rawMatches": 0,
+    "evaluated": 0,
+    "verdicts": {
+      "TRUE_POSITIVE": 0,
+      "NEEDS_HUMAN_REVIEW": 0,
+      "FALSE_POSITIVE": 0
+    }
+  },
+  "repositories": [
+    {
+      "repoSlug": "Mishak7/AI-A-B-simulation-service-",
+      "filesScanned": 0,
+      "rawMatches": 0,
+      "evaluated": 0,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "scanMs": 2023,
+      "errors": [
+        "HTTP 404 fetching zipball for Mishak7/AI-A-B-simulation-service-"
+      ]
+    },
+    {
+      "repoSlug": "thayagapriyan/askme-teams-bot",
+      "filesScanned": 0,
+      "rawMatches": 0,
+      "evaluated": 0,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "scanMs": 1088,
+      "errors": [
+        "HTTP 404 fetching zipball for thayagapriyan/askme-teams-bot"
+      ]
+    },
+    {
+      "repoSlug": "Espl0it/wechat-img-cdn",
+      "filesScanned": 101,
+      "rawMatches": 0,
+      "evaluated": 0,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "scanMs": 34511,
+      "errors": [
+        "Blob fetch error for imgs/A-31-6338-2024-12-06/08.other: TypeError: fetch failed",
+        "Blob fetch error for imgs/A-31-6338-2024-12-06/08.other: TypeError: fetch failed",
+        "Blob fetch error for imgs/A-31-6348-2025-02-21/30.other: TypeError: fetch failed",
+        "Blob fetch error for imgs/A-31-6350-2025-03-05/05.other: TypeError: fetch failed"
+      ]
+    }
+  ]
+}

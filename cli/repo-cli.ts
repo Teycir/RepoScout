@@ -127,7 +127,9 @@ function applySchema(db: any, sql: string) {
 }
 
 function getLocalDb(dbPath: string) {
-  const rawDb = new Database(dbPath);
+  const resolvedDbPath = join(ROOT, dbPath);
+  console.log(`[cli] Opening SQLite database: ${resolvedDbPath}`);
+  const rawDb = new Database(resolvedDbPath);
   rawDb.pragma('journal_mode = WAL');
   rawDb.pragma('foreign_keys = ON');
 
@@ -1017,7 +1019,7 @@ Examples:
 `);
     }
   } catch (err: any) {
-    console.error('Error:', err.message);
+    console.error('Error:', err);
     process.exit(1);
   }
 }

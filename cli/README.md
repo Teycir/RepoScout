@@ -1,6 +1,6 @@
 # RepoScout CLI
 
-CLI tool designed for AI assistants (Claude, ChatGPT, etc.) to query RepoScout's secret-scanning findings, analyst review queue, and scan history.
+CLI tool designed for AI assistants (Claude, ChatGPT, etc.) to query RepoScout's secret-scanning findings, run local secret scanning, execute the LangGraph evaluation pipeline using Ollama, and query the local SQLite database.
 
 ## Installation
 
@@ -8,46 +8,68 @@ CLI tool designed for AI assistants (Claude, ChatGPT, etc.) to query RepoScout's
 # Local development
 cd cli
 npm run build
-chmod +x repo-cli.js
 npm link
 ```
 
 ## Usage
 
+The CLI supports two modes of operation:
+1. **API Mode** (Default) — Queries the live HTTP API of a deployed RepoScout instance.
+2. **Local Mode** (`--local` / `-l`) — Queries a local SQLite database directly without hitting the HTTP API.
+
+### Remote & Local Query Commands
+
 ```bash
 # List monitored repos by risk score
-repo-cli repos 20
+repo-cli repos 20 [--local] [--db <path>]
 
-# Findings + AI verdicts for a specific repo
-repo-cli findings 3f9c1e2a-... 50
+# Findings + AI verdicts for a specific repo (accepts slug or UUID)
+repo-cli findings owner/repo 50 [--local] [--db <path>]
 
 # Analyst review queue (NEEDS_HUMAN_REVIEW, untriaged)
-repo-cli queue
+repo-cli queue [--local] [--db <path>]
 
 # Recent scan run history
-repo-cli runs 5
+repo-cli runs 5 [--local] [--db <path>]
 
 # Dashboard summary counters
-repo-cli stats
+repo-cli stats [--local] [--db <path>]
 ```
 
-## For AI Assistants
+### Local Scan & Workflow Commands
 
-This CLI provides structured, read-only access to:
-- **Repos**: Monitored repositories ranked by risk score, with critical/high finding counts and last scan status
-- **Findings**: Per-repo secret findings with masked matched text, severity, AI verdict (TRUE_POSITIVE / FALSE_POSITIVE / NEEDS_HUMAN_REVIEW), confidence, and reasoning
-- **Queue**: Findings awaiting human analyst triage
-- **Runs**: Scan execution history with totals broken down by verdict
-- **Stats**: Dashboard-level summary (total repos, critical findings, queue size, last scan time)
-
-All matched secrets are returned pre-masked (e.g. `ghp_xxxx...1234`) — `rawMatchedText` is never exposed via the API.
-
-## Environment Variables
+These commands execute the secret crawler and scanning workflow locally against an SQLite database using local CPU/GPU intelligence (via Ollama).
 
 ```bash
-# Override API endpoint (default: http://localhost:3000)
-export REPOSCOUT_API_BASE=https://your-deployment.workers.dev
+# Scan a specific repository locally
+# depth: last N edits (commits) to scan (default: 5)
+repo-cli scan owner/repo [depth] [--db <path>] [--max-findings <n>]
+
+# Run the complete discovery crawler + scan + pipeline workflow locally
+# lookbackHours: hours to look back for pushes (default: 24)
+repo-cli workflow [lookbackHours] [--db <path>] [--max-repos <n>] [--max-findings <n>]
 ```
+
+## Setup & Environment
+
+To run local scans or the workflow command, ensure you have:
+
+1. **GitHub PAT Rotation Pool**:
+   Place up to 10 GitHub Personal Access Tokens in your `.env` file at the root of the project:
+   ```bash
+   GITHUB_TOKEN_1=ghp_...
+   GITHUB_TOKEN_2=ghp_...
+   ```
+   The CLI automatically cycles through these tokens using round-robin rotation on every crawler run, commit fetch, and repository scan to bypass rate limits.
+
+2. **Local AI Engine (Ollama)**:
+   Ensure Ollama is running at `http://localhost:11434` with the `gemma4:latest` model pre-loaded:
+   ```bash
+   ollama run gemma4:latest
+   ```
+
+3. **Custom Database Location**:
+   By default, local commands read and write to `reposcout-local.sqlite` at the project root. You can customize this by passing `--db <path>`.
 
 ## Output Format
 
@@ -74,12 +96,16 @@ Clean, parseable text output optimized for AI consumption:
     Detected: 2026-06-12T09:45:00Z
 ```
 
-## API Endpoints Used
+## API Endpoints Used (Remote Mode)
 
 - `GET /api/repos?limit=<n>` — Repository risk grid
 - `GET /api/repos/<id>/findings?limit=<n>` — Findings for a repo
-- `GET /api/review-queue?limit=<n>` — Analyst triage queue
-- `GET /api/scan-runs?limit=<n>` — Recent scan runs
+- `GET /api/review-queue?limit=<n>` — Triage queue
+- `GET /api/scan-runs?limit=<n>` — Scan run history
 - `GET /api/stats` — Dashboard summary
 
 All read endpoints are rate-limited to 60 requests/minute per IP (no auth — see `lib/rateLimit.ts`).
+
+## License
+
+This project is licensed under the MIT License.

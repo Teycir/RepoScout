@@ -470,44 +470,42 @@ All matched secrets are returned **pre-masked** (e.g. `ghp_xxxx...1234`) — `ra
 
 ## CLI Tool for AI Assistants
 
-`repo-cli` gives Claude, ChatGPT, or any agent structured read access to RepoScout.
+`repo-cli` gives Claude, ChatGPT, or any agent structured access to RepoScout findings, runs, and stats, with support for live API queries or local SQLite scans using Ollama.
 
 ### Installation
 
 ```bash
 cd cli
 npm run build
-chmod +x repo-cli.js
 npm link
 ```
 
 ### Usage
 
+The CLI supports both **API Mode** (default) and **Local Mode** (direct SQLite queries).
+
+#### Remote & Local Queries
 ```bash
-repo-cli repos 20                  # List monitored repos by risk score
-repo-cli findings <repoId> 50      # Findings + AI verdicts for a repo
-repo-cli queue                     # Analyst review queue
-repo-cli runs 5                    # Recent scan run history
-repo-cli stats                     # Dashboard summary counters
+repo-cli repos 20 [--local] [--db <path>]                  # List monitored repos
+repo-cli findings <repoId> 50 [--local] [--db <path>]      # Findings + AI verdicts for a repo
+repo-cli queue [--local] [--db <path>]                      # Analyst review queue
+repo-cli runs 5 [--local] [--db <path>]                     # Recent scan run history
+repo-cli stats [--local] [--db <path>]                      # Dashboard summary counters
 ```
 
-### Output Format
-
-```
-[1] owner/repo-name
-    ID: 3f9c1e2a-...
-    Risk score: 140
-    Critical: 1  High: 2
-    Status: COMPLETED
-    Last scan: 2026-06-12T10:00:00Z
-    URL: https://github.com/owner/repo-name
-```
-
-### Environment Variables
-
+#### Local Scan & Workflow Commands
+Run the discovery crawler and secret scanner locally with CPU/GPU intelligence powered by Ollama.
 ```bash
-export REPOSCOUT_API_BASE=https://your-deployment.workers.dev   # default: http://localhost:3000
+# Scan a repo locally (default: last 5 commits)
+repo-cli scan owner/repo [depth] [--db <path>] [--max-findings <n>]
+
+# Run crawler + scan + pipeline workflow locally
+repo-cli workflow [lookbackHours] [--db <path>] [--max-repos <n>] [--max-findings <n>]
 ```
+
+### Setup Requirements (Local Scanning)
+1. **Ollama**: Running at `http://localhost:11434` with `gemma4:latest` model loaded.
+2. **GitHub Tokens**: Define `GITHUB_TOKEN_1` to `GITHUB_TOKEN_10` in your `.env` for round-robin rotation.
 
 See [`cli/README.md`](cli/README.md) for complete documentation.
 

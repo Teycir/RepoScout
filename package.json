@@ -25,7 +25,8 @@
     "test:full-e2e": "NODE_NO_WARNINGS=1 npx tsx tests/full-e2e-verification.ts",
     "test:crawler-stress": "NODE_NO_WARNINGS=1 npx tsx tests/crawler-stress-test.ts",
     "test:window-opt": "NODE_NO_WARNINGS=1 npx tsx tests/crawler-window-optimizer.ts",
-    "test:workflow": "NODE_NO_WARNINGS=1 npx tsx tests/run-workflow.ts"
+    "test:workflow": "NODE_NO_WARNINGS=1 npx tsx tests/run-workflow.ts",
+    "test:cli-full": "NODE_NO_WARNINGS=1 npx tsx tests/cli-full-test.ts"
   },
   "dependencies": {
     "@langchain/core": "^0.3.38",
