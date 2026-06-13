@@ -6,7 +6,8 @@ compatibility_flags = ["nodejs_compat"]
 workers_dev = false
 
 [triggers]
-crons = ["0 0,8,16 * * *"]  # Runs at 00:00, 08:00, 16:00 UTC (3x/day)
+# 3×/day full scan + every hour for crawler-only lightweight pass
+crons = ["0 0,8,16 * * *", "30 * * * *"]
 
 [[d1_databases]]
 binding = "DB"
@@ -21,5 +22,8 @@ id = "YOUR_KV_NAMESPACE_ID"
 binding = "AI"
 
 [vars]
-SUMMARY_MODEL    = "@cf/mistralai/mistral-small-3.1-24b-instruct"
-SCAN_MAX_CONCURRENT_REPOS = "3"
+SUMMARY_MODEL             = "@cf/mistralai/mistral-small-3.1-24b-instruct"
+SCAN_MAX_CONCURRENT_REPOS = "10"
+# Crawler tuning — override these wrangler secrets if needed:
+#   CRAWLER_LOOKBACK_HOURS  (default: 24)   — hours to look back on first run
+#   CRAWLER_MAX_PAGES       (default: 5)    — GitHub Search pages per run (30 items each)

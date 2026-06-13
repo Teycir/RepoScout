@@ -66,6 +66,22 @@ _Scan the QR code or copy the wallet address above._
 
 RepoScout is an **AI-powered GitHub secret scanning platform** that continuously monitors repositories for exposed credentials and automatically verifies their validity through an intelligent **LangGraph.js verification pipeline**.
 
+### Autonomous Crawling — No Seed List Required
+
+RepoScout no longer requires you to manually provide a list of repositories to scan. An autonomous crawler runs before every scan cycle and discovers recently-pushed public repositories from the GitHub Search API:
+
+- **Continuous discovery** — every cron tick, the crawler queries `pushed:>LAST_RUN is:public` to find repos that received new commits since the previous run.
+- **Change-aware** — repos already in D1 are only re-queued if their `pushed_at` timestamp advanced. Stale repos are skipped.
+- **KV-backed cursor** — the last-run timestamp is stored in Cloudflare KV (`crawler:since`). On the very first run, it defaults to 24 hours ago.
+- **Rate-limit safe** — the crawler consumes at most 5 GitHub Search API requests per run (150 repos) from the PAT pool, leaving the remaining quota for zipball scanning.
+- **Dedup** — repos are upserted by `(owner, name)` — duplicates never accumulate.
+
+You can still manually seed repos (for orgs you own or specific targets) via:
+```bash
+npm run db:seed-repos:remote
+```
+Manual repos are tagged `source='manual'`; crawler-discovered repos are tagged `source='crawler'`.
+
 ### The AI Advantage
 
 Unlike traditional regex-based scanners that flood security teams with false positives, RepoScout uses a sophisticated **5-node LangGraph state machine** powered by **Cloudflare Workers AI** to intelligently classify every finding before it reaches a human:
@@ -197,19 +213,28 @@ The heart of RepoScout — a **5-node intelligent state machine** that transform
 
 Built entirely on Cloudflare's edge platform with **AI-first design**:
 
+- **Autonomous Crawler**: GitHub Search API crawler — no seed list required; discovers repos with `pushed:>LAST_RUN is:public`, stores cursor in KV, upserts D1 on every cron tick
 - **AI Verification Core**: LangGraph.js `StateGraph` with 8 specialized nodes + Cloudflare Workers AI (`@cf/mistralai/mistral-small-3.1-24b-instruct`)
 - **Frontend**: Next.js 16 App Router, deployed as a Cloudflare Worker (via OpenNext `main` + `assets`)
-- **Scan Worker**: Separate Cloudflare Worker (`reposcout-scan-worker`), 3×/day cron (00:00, 08:00, 16:00 UTC) + manual `/api/trigger`
-- **Database**: Cloudflare D1 (SQLite) — 5 tables: `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens`
-- **Cache**: Cloudflare KV — LLM quota tracking, rate limiting
+- **Scan Worker**: Separate Cloudflare Worker (`reposcout-scan-worker`), 3×/day full scan + hourly crawler tick
+- **Database**: Cloudflare D1 (SQLite) — 6 tables: `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens`, `crawler_runs`
+- **Cache**: Cloudflare KV — LLM quota tracking, rate limiting, crawler cursor (`crawler:since`)
 - **Pattern Engine**: SecretScout's 91 YAML templates compiled to optimized JSON
 
-### System Design with LangGraph AI Pipeline
+### System Design with Autonomous Crawler + LangGraph AI Pipeline
 
 ```mermaid
 graph TD
-    Cron[Cloudflare Cron Trigger 3x/day] -->|Trigger| ScanWorker[Ingest & Scan Worker]
-    ScanWorker -->|1. Pick Token Round-Robin| TokenPool[7 GitHub PATs in D1]
+    Cron[Cloudflare Cron Trigger — hourly + 3x/day] -->|Trigger| ScanWorker[Ingest & Scan Worker]
+
+    subgraph "Phase 0 — Autonomous Crawler NEW"
+        ScanWorker -->|Read KV cursor| KVCursor[KV: crawler:since]
+        KVCursor --> SearchAPI[GitHub Search API pushed:>LAST_RUN is:public]
+        SearchAPI -->|Up to 150 repos/run| Upsert[Upsert repositories in D1 source=crawler]
+        Upsert -->|Advance cursor| KVCursor
+    end
+
+    ScanWorker -->|1. Pick Token Round-Robin| TokenPool[GitHub PATs in D1]
     ScanWorker -->|2. Fetch Repo Zipball| GitHub[GitHub API]
     ScanWorker -->|3. Decompress with fflate| Extractor[In-Memory Text Extractor]
     Extractor -->|4. Pattern Matching| Matcher[SecretScout Pattern Matcher]
@@ -240,11 +265,12 @@ graph TD
 
 ## Scan Execution Flow
 
-1. **Trigger** — cron fires 3×/day at 00:00, 08:00, 16:00 UTC (`0 0,8,16 * * *`); manual trigger via `POST /api/trigger`
-2. **Token Selection** — picks the PAT with the most remaining quota via `pickNextToken()`, falling back to sequential env order if D1 is unavailable
-3. **Repo Download** — fetches the repository zipball (`GET /repos/{owner}/{repo}/zipball/HEAD`); falls back to the Git Trees API for repos > 50 MB
-4. **In-Memory Decompression** — streams the zipball through `fflate.Unzip`; binary extensions and dependency dirs (`node_modules`, `.git`, `dist`, …) are skipped immediately
-5. **Pattern Matching** — each text file is scanned against all SecretScout patterns (regex / literal / entropy / composite)
+1. **Trigger** — cron fires 3×/day at 00:00, 08:00, 16:00 UTC plus an hourly lightweight pass; manual trigger via `POST /api/trigger`
+2. **🆕 Autonomous Discovery** — crawler reads the `crawler:since` KV cursor, queries GitHub Search (`pushed:>CURSOR is:public`), and upserts up to 150 repos into D1 per run. Existing repos are re-queued only if their `pushed_at` advanced. Cursor advances to now.
+3. **Token Selection** — picks the PAT with the most remaining quota via `pickNextToken()`, falling back to sequential env order if D1 is unavailable
+4. **Repo Download** — fetches the repository zipball (`GET /repos/{owner}/{repo}/zipball/HEAD`); falls back to the Git Trees API for repos > 50 MB
+5. **In-Memory Decompression** — streams the zipball through `fflate.Unzip`; binary extensions and dependency dirs (`node_modules`, `.git`, `dist`, …) are skipped immediately
+6. **Pattern Matching** — each text file is scanned against all SecretScout patterns (regex / literal / entropy / composite)
 6. **LangGraph Pipeline** — every match enters the 8-node validation graph, exiting with exactly one verdict; TRUE_POSITIVEs receive an additional impact summary
 7. **Persistence** — findings + AI evaluations written to D1; repository `risk_score` recalculated
 8. **Dashboard** — the Next.js app reads from D1 and surfaces confirmed risks + the analyst queue in real time
@@ -432,6 +458,7 @@ GET  /api/repos/:id/findings?limit=100    # Findings + AI evaluations for a repo
 GET  /api/review-queue?limit=100          # NEEDS_HUMAN_REVIEW findings awaiting triage
 GET  /api/scan-runs?limit=10              # Recent scan run history
 GET  /api/stats                           # Dashboard summary counters
+GET  /api/crawler?limit=10               # Crawler run history + current KV cursor
 
 POST /api/trigger                         # Manual scan trigger — { repoId?, dryRun? }
 POST /api/review                          # Analyst triage — { evalId, verdict }
@@ -516,8 +543,8 @@ wrangler secret put GITHUB_TOKEN_1 --config wrangler.scan.toml
 
 | Resource        | Binding       | Notes                                                                               |
 | --------------- | ------------- | ----------------------------------------------------------------------------------- |
-| D1 Database     | `DB`          | 5 tables — `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens` |
-| KV Namespace    | `CACHE`       | LLM quota (`llm_quota:{date}`) + rate limiting (`ratelimit:*`)                      |
+| D1 Database     | `DB`          | 6 tables — `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens`, `crawler_runs` |
+| KV Namespace    | `CACHE`       | LLM quota (`llm_quota:{date}`) + rate limiting (`ratelimit:*`) + crawler cursor (`crawler:since`)   |
 | Workers AI      | `AI`          | `@cf/mistralai/mistral-small-3.1-24b-instruct` for nodes 3c, 4, and 5b classification        |
 | Service Binding | `SCAN_WORKER` | `reposcout-scan-worker` — used by `/api/trigger`                                    |
 
@@ -527,11 +554,15 @@ wrangler secret put GITHUB_TOKEN_1 --config wrangler.scan.toml
 
 ### `repositories`
 
-Monitored repos — `risk_score`, `high_severity_findings`, `critical_severity_findings`, `last_scan_at`, `last_scan_status`
+Monitored repos — `risk_score`, `high_severity_findings`, `critical_severity_findings`, `last_scan_at`, `last_scan_status`, `source` (`manual` | `crawler`), `pushed_at` (GitHub's last push timestamp for change-detection), `crawled_at`
 
 ### `scan_runs`
 
 Execution log — `total_repos_scanned`, `total_findings`, `true_positives`, `needs_human_review`, `false_positives`, `status`
+
+### `crawler_runs`
+
+Autonomous discovery log — `repos_discovered`, `repos_updated`, `since_cursor`, `next_cursor`, `status`. One row per crawler pass.
 
 ### `findings`
 

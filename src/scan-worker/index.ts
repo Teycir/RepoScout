@@ -1,14 +1,19 @@
 // src/scan-worker/index.ts
-// Cloudflare Worker entry — fetch (manual trigger) + scheduled (hourly cron).
+// Cloudflare Worker entry — fetch (manual trigger) + scheduled (cron 3×/day).
+// Autonomous mode: crawler discovers recently-pushed public repos from GitHub
+// Search before the scan loop runs — no manual seed list required.
 
 import type { Env, Template } from "../lib/types.js";
 import { scanRepo, pickNextToken, recordTokenUsage } from "./scanner.js";
 import { createScanValidationGraph, persistEvaluation } from "./pipeline.js";
 import { recalculateRepoMetrics } from "../../lib/db.js";
+import { discoverRepos } from "./crawler.js";
 import templates from "./patterns.json";
 
 const COMPILED_TEMPLATES = templates as Template[];
-const MAX_CONCURRENT_REPOS = 3;
+// Crawler can surface many repos per run; scan up to 10 per cron invocation.
+// Workers CPU limit (30 s for scheduled events) gates the real concurrency.
+const MAX_CONCURRENT_REPOS = 10;
 
 // ---------------------------------------------------------------------------
 // Raw token injection
@@ -70,6 +75,28 @@ async function runScan(
     return;
   }
 
+  // ------------------------------------------------------------------
+  // Autonomous discovery phase — only runs on scheduled/full scans,
+  // not when a specific repoId is passed (manual targeted trigger).
+  // Uses the first available PAT for the Search API calls.
+  // ------------------------------------------------------------------
+  if (!repoId) {
+    const crawlToken = rawTokens[0]!;
+    try {
+      const crawl = await discoverRepos(env, crawlToken);
+      if (crawl.errors.length > 0) {
+        console.warn("[scan-worker] Crawler errors:", crawl.errors.slice(0, 5));
+      }
+      console.log(
+        `[scan-worker] Crawler done: ${crawl.reposDiscovered} new, ` +
+        `${crawl.reposUpdated} re-queued, ${crawl.reposEligible.length} eligible.`,
+      );
+    } catch (e) {
+      // Crawler failure must not abort the scan of already-known repos
+      console.error("[scan-worker] Crawler threw unexpectedly:", e);
+    }
+  }
+
   // Pick repos from D1 — optionally filter to a single repo
   const query = repoId
     ? env.DB.prepare(
@@ -78,8 +105,12 @@ async function runScan(
       ).bind(repoId)
     : env.DB.prepare(
         `SELECT id, owner, name, url, last_scan_at FROM repositories
-         WHERE last_scan_status != 'RUNNING'
-         ORDER BY last_scan_at ASC NULLS FIRST
+         WHERE last_scan_status NOT IN ('RUNNING')
+         ORDER BY
+           -- Freshly-discovered/re-queued repos (PENDING) go first,
+           -- then oldest-scanned to ensure even coverage.
+           CASE last_scan_status WHEN 'PENDING' THEN 0 ELSE 1 END ASC,
+           last_scan_at ASC NULLS FIRST
          LIMIT ?`,
       ).bind(MAX_CONCURRENT_REPOS);
 
