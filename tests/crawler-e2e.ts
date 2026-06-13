@@ -217,40 +217,101 @@ function makeOllamaAI(): Ai {
     console.log(`Scanning ${repo.owner}/${repo.name}`);
 
     const scanStart = Date.now();
-    const result = await scanRepo(repo.url, patterns, tokens[0]!);
+    let result;
+    try {
+      result = await scanRepo(repo.owner, repo.name, tokens[0]!, patterns);
+    } catch (e) {
+      console.error(`  [!] scanRepo threw: ${e}`);
+      continue;
+    }
+    const { matches, filesScanned, errors } = result;
     const scanTime = Date.now() - scanStart;
 
-    console.log(`  files : ${result.filesScanned}  |  matches : ${result.findings.length}  |  ${scanTime}ms`);
-    totalFindings += result.findings.length;
+    console.log(`  files : ${filesScanned}  |  matches : ${matches.length}  |  ${scanTime}ms`);
+    if (errors.length) console.log(`  errors: ${errors.slice(0, 3).join('; ')}`);
+    totalFindings += matches.length;
 
-    await d1.prepare(`UPDATE repositories SET last_scan_status = 'COMPLETED', last_scanned_at = datetime('now') WHERE id = ?`)
+    await d1.prepare(`UPDATE repositories SET last_scan_status = 'COMPLETED', last_scan_at = datetime('now') WHERE id = ?`)
       .bind(repoId).run();
 
     // Run pipeline on sample findings
-    const sampleSize = Math.min(10, result.findings.length);
-    for (const finding of result.findings.slice(0, sampleSize)) {
+    const sampleSize = Math.min(10, matches.length);
+    for (const match of matches.slice(0, sampleSize)) {
+      const findingId = crypto.randomUUID();
+
+      // Persist finding
+      let activeFindingId = findingId;
       try {
-        const evalResult = await pipeline.invoke({
-          finding,
-          repoUrl: repo.url,
-          commitSha: result.commitSha || 'unknown',
+        const row = await d1.prepare(`
+          INSERT INTO findings
+            (id, scan_run_id, repo_id, file_path, file_url, line_number,
+             matched_text, line_content, context, pattern_id, template_id, severity)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(repo_id, file_path, line_number, pattern_id, matched_text)
+          DO UPDATE SET scan_run_id = excluded.scan_run_id
+          RETURNING id
+        `).bind(
+          findingId, scanRunId, repo.id,
+          match.filePath,
+          `https://github.com/${repo.owner}/${repo.name}/blob/HEAD/${match.filePath}#L${match.lineNumber}`,
+          match.lineNumber,
+          match.matchedText,
+          match.context.split('\n')[0] ?? '',
+          JSON.stringify(match.context.split('\n')),
+          match.patternId, match.templateId, match.severity,
+        ).first<{ id: string }>();
+        activeFindingId = row?.id ?? findingId;
+      } catch (e) {
+        console.error(`  [!] finding persist: ${e}`);
+        continue;
+      }
+
+      // LangGraph pipeline
+      let finalState: any;
+      try {
+        finalState = await pipeline.invoke({
+          findingId: activeFindingId,
+          repoName: `${repo.owner}/${repo.name}`,
+          filePath: match.filePath,
+          lineNumber: match.lineNumber,
+          matchedText: match.matchedText,
+          rawMatchedText: match.rawMatchedText,
+          lineContent: match.context.split('\n')[0] ?? '',
+          surroundingContext: match.context,
+          patternId: match.patternId,
+          templateId: match.templateId,
+          severity: match.severity,
+          isHeuristicPlaceholder: false,
+          validationStatus: 'UNVERIFIABLE' as const,
+          verdict: 'NEEDS_HUMAN_REVIEW' as const,
+          aiReasoning: '',
+          confidenceScore: 0,
+          riskScore: 0,
+          validationMethod: 'heuristic' as const,
         });
-        
+      } catch (e) {
+        console.error(`  [pipeline error] ${e}`);
+        continue;
+      }
+
+      // Persist evaluation
+      try {
         await persistEvaluation(d1, {
-          finding_id: crypto.randomUUID(),
-          scan_run_id: scanRunId,
-          repo_id: repoId,
-          verdict: evalResult.verdict,
-          reasoning: evalResult.reasoning,
-          confidence: evalResult.confidence,
+          findingId: activeFindingId,
+          verdict: finalState.verdict,
+          confidence: finalState.confidenceScore,
+          validationMethod: finalState.validationMethod ?? 'llm',
+          validationStatus: finalState.validationStatus ?? 'UNVERIFIABLE',
+          reasoning: finalState.aiReasoning ?? '',
+          riskScore: finalState.riskScore,
         });
         totalEvaluated++;
 
-        const icon = evalResult.verdict === 'TRUE_POSITIVE' ? '🔴' : 
-                     evalResult.verdict === 'NEEDS_HUMAN_REVIEW' ? '🟡' : '⚪';
-        console.log(`  ${icon} ${finding.severity.padEnd(8)} ${finding.rule_id.padEnd(30)} ${finding.location}  [conf:${finding.confidence.toFixed(2)}]`);
+        const icon = finalState.verdict === 'TRUE_POSITIVE' ? '🔴' : 
+                     finalState.verdict === 'NEEDS_HUMAN_REVIEW' ? '🟡' : '⚪';
+        console.log(`  ${icon} ${match.severity.padEnd(8)} ${match.patternId.padEnd(30)} ${match.filePath}:${match.lineNumber}  [conf:${finalState.confidenceScore.toFixed(2)}]`);
       } catch (e) {
-        console.error(`  [pipeline error] ${e}`);
+        console.error(`  [!] eval persist: ${e}`);
       }
     }
   }

@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-06-13T20:37:06.056Z",
+  "elapsedSeconds": 52.4,
+  "lookbackCursor": "2026-06-12T20:36:13.663Z",
+  "summary": {
+    "discovered": 105,
+    "updated": 0,
+    "eligible": 105,
+    "scanned": 3,
+    "filesScanned": 377,
+    "totalFindings": 106,
+    "totalEvaluated": 10,
+    "verdicts": {
+      "TRUE_POSITIVE": 0,
+      "NEEDS_HUMAN_REVIEW": 0,
+      "FALSE_POSITIVE": 10
+    }
+  },
+  "scannedRepositories": [
+    {
+      "repo": "budhkeng/jbhxkq",
+      "filesScanned": 5,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 2284,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "Dev-angPatil/EcosystemAI",
+      "filesScanned": 367,
+      "matches": 106,
+      "evaluated": 10,
+      "scanMs": 2613,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "lagginas/wcxbcd",
+      "filesScanned": 5,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 2271,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    }
+  ]
+}

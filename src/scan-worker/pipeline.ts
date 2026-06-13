@@ -239,7 +239,7 @@ async function awsPairReconstructionNode(
     const credentialScope = `${dateStr}/${region}/${service}/aws4_request`;
     const encoder = new TextEncoder();
 
-    async function hmacSha256(key: ArrayBuffer, data: string): Promise<ArrayBuffer> {
+    async function hmacSha256(key: BufferSource, data: string): Promise<ArrayBuffer> {
       const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
       return crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(data));
     }

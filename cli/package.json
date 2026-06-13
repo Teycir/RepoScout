@@ -2,14 +2,18 @@
   "name": "repo-cli",
   "version": "1.0.0",
   "description": "CLI tool for AI assistants to query RepoScout secret-scanning findings",
+  "type": "module",
   "bin": {
-    "repo-cli": "./repo-cli.js"
+    "repo-cli": "./dist/cli/repo-cli.js"
   },
   "scripts": {
-    "build": "tsc repo-cli.ts --target ES2022 --module NodeNext --outDir .",
+    "build": "../node_modules/.bin/tsc",
     "prepublish": "npm run build"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0"
   },
   "keywords": ["secrets", "security", "scanning", "cli", "ai"],
   "author": "Teycir Ben Soltane",
-  "license": "BSL-1.1"
+  "license": "MIT"
 }

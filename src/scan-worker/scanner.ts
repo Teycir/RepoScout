@@ -143,13 +143,14 @@ async function scanViaZipball(
   repo: string,
   githubToken: string,
   templates: Template[],
+  ref: string = 'HEAD',
 ): Promise<ZipballScanResult> {
   const allMatches: Match[] = [];
   const errors: string[] = [];
   let filesScanned = 0;
   let bytesRead    = 0;
 
-  const zipUrl = `https://api.github.com/repos/${owner}/${repo}/zipball/HEAD`;
+  const zipUrl = `https://api.github.com/repos/${owner}/${repo}/zipball/${ref}`;
   const res = await fetch(zipUrl, {
     headers: {
       Authorization: `Bearer ${githubToken}`,
@@ -269,6 +270,7 @@ async function scanViaGitTrees(
   repo: string,
   githubToken: string,
   templates: Template[],
+  ref: string = 'HEAD',
 ): Promise<ZipballScanResult> {
   const allMatches: Match[] = [];
   const errors: string[] = [];
@@ -277,7 +279,7 @@ async function scanViaGitTrees(
   let rateLimit: RateLimitInfo = { remaining: 4999, resetIso: null };
 
   // Fetch full recursive tree
-  const treePath = `/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`;
+  const treePath = `/repos/${owner}/${repo}/git/trees/${ref}?recursive=1`;
   let tree: TreeEntry[];
   try {
     const { body, rateLimit: rl } = await githubGet(treePath, githubToken);
@@ -362,6 +364,7 @@ export async function scanRepo(
   repo: string,
   githubToken: string,
   templates: Template[],
+  ref: string = 'HEAD',
 ): Promise<ZipballScanResult> {
   // Check repo size to decide which mode to use
   let repoSizeKb = 0;
@@ -376,10 +379,10 @@ export async function scanRepo(
     console.log(
       `[scanner] ${owner}/${repo} is ${repoSizeKb} KB > ${LARGE_REPO_KB} KB — using Git Trees API`
     );
-    return scanViaGitTrees(owner, repo, githubToken, templates);
+    return scanViaGitTrees(owner, repo, githubToken, templates, ref);
   }
 
-  return scanViaZipball(owner, repo, githubToken, templates);
+  return scanViaZipball(owner, repo, githubToken, templates, ref);
 }
 
 // ---------------------------------------------------------------------------

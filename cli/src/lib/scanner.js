@@ -1,0 +1,382 @@
+"use strict";
+// src/lib/scanner.ts
+// Port of secretscout-core/src/scanner.rs
+// Scans source text against compiled templates, returns masked Match objects.
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.shouldSkipPath = shouldSkipPath;
+exports.isLikelyPlaceholder = isLikelyPlaceholder;
+exports.scanSource = scanSource;
+const masking_js_1 = require("./masking.js");
+const entropy_js_1 = require("./entropy.js");
+// ---------------------------------------------------------------------------
+// Constants — mirrors scanner.rs limits
+// ---------------------------------------------------------------------------
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_MATCHES_PER_FILE = 500;
+const MAX_MATCH_LENGTH = 500;
+const MAX_LINE_LENGTH = 1_000; // skip lines longer than this
+const CONTEXT_LINES = 5; // lines above + below match
+// Paths to skip entirely
+const SKIP_EXTENSIONS = new Set([
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".svg",
+    ".ico",
+    ".webp",
+    ".pdf",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".wasm",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".eot",
+    ".exe",
+    ".dll",
+    ".so",
+    ".dylib",
+    ".bin",
+    ".lock",
+    ".map",
+]);
+const SKIP_DIRS = new Set([
+    "node_modules",
+    "bower_components",
+    "vendor",
+    "dist",
+    "build",
+    ".next",
+    ".open-next",
+    "target",
+    "__pycache__",
+    ".git",
+    ".github",
+]);
+// Inline suppression markers (case-insensitive)
+const SUPPRESS_CURRENT = [
+    "secretscout:ignore",
+    "secretscout:ignore-line",
+    "gitleaks:allow",
+    "nosec",
+];
+const SUPPRESS_NEXT = "secretscout:ignore-next";
+// SSH / PEM public key patterns — suppress to avoid false positives
+const SSH_PUB_RE = /^\s*(?:ssh-(?:rsa|dss|ed25519)|ecdsa-sha2-nistp(?:256|384|521))\s+[A-Za-z0-9+/]+=*/m;
+const PEM_PUB_RE = /-----BEGIN (?:RSA |DSA |EC |OPENSSH )?PUBLIC KEY-----/;
+// ---------------------------------------------------------------------------
+// Path helpers
+// ---------------------------------------------------------------------------
+function shouldSkipPath(filePath) {
+    const parts = filePath.replace(/\\/g, "/").split("/");
+    if (parts.some((p) => SKIP_DIRS.has(p)))
+        return true;
+    const lastDot = filePath.lastIndexOf(".");
+    if (lastDot !== -1) {
+        const ext = filePath.slice(lastDot).toLowerCase();
+        if (SKIP_EXTENSIONS.has(ext))
+            return true;
+    }
+    return false;
+}
+// ---------------------------------------------------------------------------
+// Suppression
+// ---------------------------------------------------------------------------
+function findSuppressedLines(lines) {
+    const suppressed = new Set();
+    for (let i = 0; i < lines.length; i++) {
+        const lower = (lines[i] ?? "").toLowerCase();
+        const lineNum = i + 1; // 1-indexed
+        if (lower.includes(SUPPRESS_NEXT)) {
+            suppressed.add(lineNum + 1);
+        }
+        else if (SUPPRESS_CURRENT.some((p) => lower.includes(p))) {
+            suppressed.add(lineNum);
+        }
+    }
+    return suppressed;
+}
+function isSshPublicKeyMatch(rawText, context) {
+    if (SSH_PUB_RE.test(rawText) || SSH_PUB_RE.test(context))
+        return true;
+    if (PEM_PUB_RE.test(context))
+        return true;
+    return false;
+}
+// ---------------------------------------------------------------------------
+// Context extraction
+// ---------------------------------------------------------------------------
+function getContext(lines, lineIndex) {
+    const start = Math.max(0, lineIndex - CONTEXT_LINES);
+    const end = Math.min(lines.length, lineIndex + CONTEXT_LINES + 1);
+    return lines.slice(start, end).join("\n");
+}
+// ---------------------------------------------------------------------------
+// Line-offset index
+// Precomputed once per file (O(N)) so each match resolves its line number via
+// O(log L) binary search instead of re-slicing+splitting the source from
+// byte 0 (O(N) per match, O(N*K) per file for K matches).
+// ---------------------------------------------------------------------------
+function buildLineOffsets(source) {
+    const offsets = [0]; // line 0 starts at byte 0
+    for (let i = 0; i < source.length; i++) {
+        if (source.charCodeAt(i) === 10 /* '\n' */)
+            offsets.push(i + 1);
+    }
+    return offsets;
+}
+/** 0-based line index containing byte offset `pos`. */
+function lineIndexForOffset(lineOffsets, pos) {
+    let lo = 0, hi = lineOffsets.length - 1;
+    while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if (lineOffsets[mid] <= pos)
+            lo = mid;
+        else
+            hi = mid - 1;
+    }
+    return lo;
+}
+/** Resolve (0-based line index, byte offset of that line's start) for `pos`. */
+function resolveLine(lineOffsets, pos) {
+    const lineIndex = lineIndexForOffset(lineOffsets, pos);
+    return { lineIndex, lineStart: lineOffsets[lineIndex] };
+}
+// ---------------------------------------------------------------------------
+// Match builder
+// ---------------------------------------------------------------------------
+function buildMatch(templateId, patternId, severity, message, rawText, lines, lineIndex, // 0-based
+colOffset, isEntropy) {
+    return {
+        templateId,
+        patternId,
+        filePath: "", // filled in by scan()
+        lineNumber: lineIndex + 1,
+        column: colOffset,
+        matchedText: (0, masking_js_1.maskSecret)(rawText),
+        rawMatchedText: rawText,
+        context: getContext(lines, lineIndex),
+        codeSnippet: null,
+        severity,
+        message,
+        entropyScore: isEntropy ? (0, entropy_js_1.calculateEntropy)(rawText) : null,
+        confidence: 0, // set by cascade
+        validationStatus: null,
+    };
+}
+// ---------------------------------------------------------------------------
+// Placeholder / false-positive suppression (mirrors cascade.rs heuristics)
+// ---------------------------------------------------------------------------
+const PLACEHOLDER_TERMS = [
+    "placeholder",
+    "example",
+    "your_key",
+    "your_token",
+    "my_key",
+    "xxxx",
+    "test_key",
+    "dummy",
+    "sample",
+    "replace_me",
+    "insert_key",
+    "your-",
+    "fake",
+    "mock",
+    "demo",
+];
+function isLikelyPlaceholder(text) {
+    const lower = text.toLowerCase();
+    if (PLACEHOLDER_TERMS.some((t) => lower.includes(t)))
+        return true;
+    // Low-entropy hex (repeating nibbles)
+    if (/^[a-f0-9]{32,}$/i.test(text) && new Set(lower).size <= 5)
+        return true;
+    return false;
+}
+function scanSource(source, templates, options = {}) {
+    const filePath = options.filePath ?? "";
+    const maxMatches = options.maxMatches ?? MAX_MATCHES_PER_FILE;
+    if (source.length > MAX_FILE_SIZE)
+        return [];
+    const lines = source.split("\n");
+    const lineOffsets = buildLineOffsets(source);
+    const suppressed = findSuppressedLines(lines);
+    const allMatches = [];
+    const seen = new Set(); // dedup key: lineNum:col:patternId
+    for (const template of templates) {
+        if (allMatches.length >= maxMatches)
+            break;
+        const templateMatches = [];
+        if (template.requireAll && template.patterns.length > 1) {
+            // Composite mode: all patterns must match within proximityBytes of each other
+            templateMatches.push(...scanComposite(source, lines, lineOffsets, template));
+        }
+        else {
+            for (const pattern of template.patterns) {
+                if (allMatches.length + templateMatches.length >= maxMatches)
+                    break;
+                const hits = scanPattern(source, lines, lineOffsets, template, pattern);
+                templateMatches.push(...hits);
+            }
+        }
+        for (const m of templateMatches) {
+            if (suppressed.has(m.lineNumber))
+                continue;
+            if (isSshPublicKeyMatch(m.rawMatchedText, m.context))
+                continue;
+            if (isLikelyPlaceholder(m.rawMatchedText))
+                continue;
+            const key = `${m.lineNumber}:${m.column}:${m.patternId}`;
+            if (seen.has(key))
+                continue;
+            seen.add(key);
+            allMatches.push({ ...m, filePath });
+            if (allMatches.length >= maxMatches)
+                break;
+        }
+    }
+    // Sort by line number
+    allMatches.sort((a, b) => a.lineNumber - b.lineNumber);
+    return allMatches;
+}
+// ---------------------------------------------------------------------------
+// Pattern-level scan
+// ---------------------------------------------------------------------------
+function scanPattern(source, lines, lineOffsets, template, pattern) {
+    const matches = [];
+    switch (pattern.kind) {
+        case "regex":
+        case "fancy-regex": {
+            let re;
+            try {
+                // Use /gmi when the template marks caseInsensitive (stripped from (?i) prefix by compile-patterns)
+                const flags = pattern.caseInsensitive ? "gmi" : "gm";
+                re = new RegExp(pattern.pattern, flags);
+            }
+            catch {
+                return [];
+            }
+            let m;
+            while ((m = re.exec(source)) !== null) {
+                if (matches.length >= MAX_MATCHES_PER_FILE)
+                    break;
+                const rawText = m[0];
+                if (rawText.length > MAX_MATCH_LENGTH)
+                    continue;
+                const { lineIndex, lineStart } = resolveLine(lineOffsets, m.index);
+                const col = m.index - lineStart;
+                if ((lines[lineIndex]?.length ?? 0) > MAX_LINE_LENGTH)
+                    continue;
+                matches.push(buildMatch(template.id, pattern.id, template.severity, pattern.message, rawText, lines, lineIndex, col, false));
+                // Prevent infinite loops on zero-length matches
+                if (m[0].length === 0)
+                    re.lastIndex++;
+            }
+            break;
+        }
+        case "literal": {
+            let idx = 0;
+            while (idx < source.length) {
+                if (matches.length >= MAX_MATCHES_PER_FILE)
+                    break;
+                const pos = source.indexOf(pattern.pattern, idx);
+                if (pos === -1)
+                    break;
+                const rawText = pattern.pattern;
+                if (rawText.length > MAX_MATCH_LENGTH) {
+                    idx = pos + 1;
+                    continue;
+                }
+                const { lineIndex, lineStart } = resolveLine(lineOffsets, pos);
+                if ((lines[lineIndex]?.length ?? 0) > MAX_LINE_LENGTH) {
+                    idx = pos + 1;
+                    continue;
+                }
+                matches.push(buildMatch(template.id, pattern.id, template.severity, pattern.message, rawText, lines, lineIndex, pos - lineStart, false));
+                idx = pos + rawText.length;
+            }
+            break;
+        }
+        case "entropy": {
+            const threshold = template.entropyThreshold ?? 4.5;
+            const hits = (0, entropy_js_1.findHighEntropyStrings)(source, threshold, MAX_MATCHES_PER_FILE);
+            for (const hit of hits) {
+                if (matches.length >= MAX_MATCHES_PER_FILE)
+                    break;
+                if (hit.text.length > MAX_MATCH_LENGTH)
+                    continue;
+                const { lineIndex, lineStart } = resolveLine(lineOffsets, hit.start);
+                if ((lines[lineIndex]?.length ?? 0) > MAX_LINE_LENGTH)
+                    continue;
+                matches.push(buildMatch(template.id, pattern.id, template.severity, pattern.message, hit.text, lines, lineIndex, hit.start - lineStart, true));
+            }
+            break;
+        }
+    }
+    return matches;
+}
+// ---------------------------------------------------------------------------
+// Composite mode (require_all + proximity_bytes)
+// ---------------------------------------------------------------------------
+function scanComposite(source, lines, lineOffsets, template) {
+    // Collect match positions for each pattern
+    const perPattern = [];
+    for (const pattern of template.patterns) {
+        const positions = [];
+        if (pattern.kind === "literal") {
+            let idx = 0;
+            while (idx < source.length) {
+                const pos = source.indexOf(pattern.pattern, idx);
+                if (pos === -1)
+                    break;
+                positions.push({
+                    start: pos,
+                    end: pos + pattern.pattern.length,
+                    rawText: pattern.pattern,
+                });
+                idx = pos + pattern.pattern.length;
+            }
+        }
+        else {
+            let re;
+            try {
+                re = new RegExp(pattern.pattern, "gm");
+            }
+            catch {
+                continue;
+            }
+            let m;
+            while ((m = re.exec(source)) !== null) {
+                positions.push({
+                    start: m.index,
+                    end: m.index + m[0].length,
+                    rawText: m[0],
+                });
+                if (m[0].length === 0)
+                    re.lastIndex++;
+            }
+        }
+        perPattern.push(positions);
+    }
+    if (perPattern.some((pp) => pp.length === 0))
+        return [];
+    const results = [];
+    const anchors = perPattern[0];
+    const proximity = template.proximityBytes || Infinity;
+    for (const anchor of anchors) {
+        const allNearby = perPattern
+            .slice(1)
+            .every((others) => others.some((o) => Math.abs(o.start - anchor.start) <= proximity ||
+            Math.abs(o.end - anchor.end) <= proximity));
+        if (!allNearby)
+            continue;
+        const lineIndex = lineIndexForOffset(lineOffsets, anchor.start);
+        const lineStart = lineOffsets[lineIndex];
+        results.push(buildMatch(template.id, template.patterns[0].id, template.severity, template.patterns[0].message, anchor.rawText, lines, lineIndex, anchor.start - lineStart, false));
+        if (results.length >= MAX_MATCHES_PER_FILE)
+            break;
+    }
+    return results;
+}
