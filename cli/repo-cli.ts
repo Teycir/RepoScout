@@ -763,117 +763,140 @@ async function cmd_workflow(lookbackHours = 24, dbPath = '', maxRepos = 3, maxFi
   const summaries: any[] = [];
 
   for (const repoId of reposToScan) {
-    const repo = await d1.prepare(`SELECT * FROM repositories WHERE id = ?`).bind(repoId).first<any>();
-    if (!repo) continue;
+    let repo: any = null;
+    try {
+      repo = await d1.prepare(`SELECT * FROM repositories WHERE id = ?`).bind(repoId).first<any>();
+      if (!repo) continue;
 
-    console.log(`\n────────────────────────────────────────────────────────────────`);
-    console.log(`Scanning ${repo.owner}/${repo.name}...`);
+      console.log(`\n────────────────────────────────────────────────────────────────`);
+      console.log(`Scanning ${repo.owner}/${repo.name}...`);
 
-    const scanStart = Date.now();
-    const commits = await getLast5Commits(repo.owner, repo.name, nextToken());
-    console.log(`  Depth: Scanning last ${commits.length} edits (commits)...`);
+      const scanStart = Date.now();
+      const commits = await getLast5Commits(repo.owner, repo.name, nextToken());
+      console.log(`  Depth: Scanning last ${commits.length} edits (commits)...`);
 
-    const allMatchesMap = new Map<string, any>();
-    let filesScannedTotal = 0;
-    const errorsList: string[] = [];
+      const allMatchesMap = new Map<string, any>();
+      let filesScannedTotal = 0;
+      const errorsList: string[] = [];
 
-    for (let idx = 0; idx < commits.length; idx++) {
-      const sha = commits[idx]!;
-      try {
-        const result = await scanRepo(repo.owner, repo.name, nextToken(), patterns, sha);
-        filesScannedTotal += result.filesScanned;
-        if (result.errors) errorsList.push(...result.errors);
-        for (const m of result.matches) {
-          const key = `${m.filePath}:${m.lineNumber}:${m.patternId}:${m.matchedText}`;
-          if (!allMatchesMap.has(key)) {
-            allMatchesMap.set(key, { ...m, commitSha: sha });
+      for (let idx = 0; idx < commits.length; idx++) {
+        const sha = commits[idx]!;
+        try {
+          const result = await scanRepo(repo.owner, repo.name, nextToken(), patterns, sha);
+          filesScannedTotal += result.filesScanned;
+          if (result.errors) errorsList.push(...result.errors);
+          for (const m of result.matches) {
+            const key = `${m.filePath}:${m.lineNumber}:${m.patternId}:${m.matchedText}`;
+            if (!allMatchesMap.has(key)) {
+              allMatchesMap.set(key, { ...m, commitSha: sha });
+            }
           }
+        } catch (e) {
+          errorsList.push(`Commit ${sha.slice(0, 7)} scan failed: ${e}`);
         }
-      } catch (e) {
-        errorsList.push(`Commit ${sha.slice(0, 7)} scan failed: ${e}`);
       }
-    }
 
-    const matches = Array.from(allMatchesMap.values());
-    const scanTime = Date.now() - scanStart;
-    totalFilesScanned += filesScannedTotal;
-    totalFindings += matches.length;
+      const matches = Array.from(allMatchesMap.values());
+      const scanTime = Date.now() - scanStart;
+      totalFilesScanned += filesScannedTotal;
+      totalFindings += matches.length;
 
-    console.log(`  Files scanned : ${filesScannedTotal} (across all edits)`);
-    console.log(`  Unique matches: ${matches.length}`);
-    console.log(`  Scan time     : ${scanTime}ms`);
+      console.log(`  Files scanned : ${filesScannedTotal} (across all edits)`);
+      console.log(`  Unique matches: ${matches.length}`);
+      console.log(`  Scan time     : ${scanTime}ms`);
 
-    await d1.prepare(`UPDATE repositories SET last_scan_status = 'COMPLETED', last_scan_at = datetime('now') WHERE id = ?`)
-      .bind(repoId).run();
+      await d1.prepare(`UPDATE repositories SET last_scan_status = 'COMPLETED', last_scan_at = datetime('now') WHERE id = ?`)
+        .bind(repoId).run();
 
-    const verdicts: Record<string, number> = { TRUE_POSITIVE: 0, NEEDS_HUMAN_REVIEW: 0, FALSE_POSITIVE: 0 };
-    const matchesSlice = matches.slice(0, maxFindings);
+      const verdicts: Record<string, number> = { TRUE_POSITIVE: 0, NEEDS_HUMAN_REVIEW: 0, FALSE_POSITIVE: 0 };
+      const matchesSlice = matches.slice(0, maxFindings);
 
-    for (const match of matchesSlice) {
-      const findingId = crypto.randomUUID();
-      try {
-        const row = await d1.prepare(`
-          INSERT INTO findings
-            (id, scan_run_id, repo_id, file_path, file_url, line_number,
-             matched_text, line_content, context, pattern_id, template_id, severity)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(repo_id, file_path, line_number, pattern_id, matched_text)
-          DO UPDATE SET scan_run_id = excluded.scan_run_id
-          RETURNING id
-        `).bind(
-          findingId, scanRunId, repo.id,
-          match.filePath,
-          `https://github.com/${repo.owner}/${repo.name}/blob/${match.commitSha || 'HEAD'}/${match.filePath}#L${match.lineNumber}`,
-          match.lineNumber,
-          match.matchedText,
-          match.context.split('\n')[0] ?? '',
-          JSON.stringify(match.context.split('\n')),
-          match.patternId, match.templateId, match.severity,
-        ).first<{ id: string }>();
-        const activeFindingId = row?.id ?? findingId;
+      for (const match of matchesSlice) {
+        const findingId = crypto.randomUUID();
+        try {
+          const row = await d1.prepare(`
+            INSERT INTO findings
+              (id, scan_run_id, repo_id, file_path, file_url, line_number,
+               matched_text, line_content, context, pattern_id, template_id, severity)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(repo_id, file_path, line_number, pattern_id, matched_text)
+            DO UPDATE SET scan_run_id = excluded.scan_run_id
+            RETURNING id
+          `).bind(
+            findingId, scanRunId, repo.id,
+            match.filePath,
+            `https://github.com/${repo.owner}/${repo.name}/blob/${match.commitSha || 'HEAD'}/${match.filePath}#L${match.lineNumber}`,
+            match.lineNumber,
+            match.matchedText,
+            match.context.split('\n')[0] ?? '',
+            JSON.stringify(match.context.split('\n')),
+            match.patternId, match.templateId, match.severity,
+          ).first<{ id: string }>();
+          const activeFindingId = row?.id ?? findingId;
 
-        const finalState = await pipeline.invoke({
-          findingId: activeFindingId,
-          repoName: `${repo.owner}/${repo.name}`,
-          filePath: match.filePath,
-          lineNumber: match.lineNumber,
-          matchedText: match.matchedText,
-          rawMatchedText: match.rawMatchedText || match.matchedText,
-          lineContent: match.context.split('\n')[0] ?? '',
-          surroundingContext: match.context,
-          patternId: match.patternId,
-          templateId: match.templateId,
-          severity: match.severity,
-          isHeuristicPlaceholder: false,
-          validationStatus: 'UNVERIFIABLE' as const,
-          verdict: 'NEEDS_HUMAN_REVIEW' as const,
-          aiReasoning: '',
-          confidenceScore: 0,
-          riskScore: 0,
-          validationMethod: 'heuristic' as const,
-        });
+          const finalState = await pipeline.invoke({
+            findingId: activeFindingId,
+            repoName: `${repo.owner}/${repo.name}`,
+            filePath: match.filePath,
+            lineNumber: match.lineNumber,
+            matchedText: match.matchedText,
+            rawMatchedText: match.rawMatchedText || match.matchedText,
+            lineContent: match.context.split('\n')[0] ?? '',
+            surroundingContext: match.context,
+            patternId: match.patternId,
+            templateId: match.templateId,
+            severity: match.severity,
+            isHeuristicPlaceholder: false,
+            validationStatus: 'UNVERIFIABLE' as const,
+            verdict: 'NEEDS_HUMAN_REVIEW' as const,
+            aiReasoning: '',
+            confidenceScore: 0,
+            riskScore: 0,
+            validationMethod: 'heuristic' as const,
+          });
 
-        await persistEvaluation(d1, {
-          findingId: activeFindingId,
-          verdict: finalState.verdict,
-          confidence: finalState.confidenceScore,
-          validationMethod: finalState.validationMethod ?? 'llm',
-          validationStatus: finalState.validationStatus ?? 'UNVERIFIABLE',
-          reasoning: finalState.aiReasoning ?? '',
-          riskScore: finalState.riskScore,
-        });
-        totalEvaluated++;
-        verdicts[finalState.verdict] = (verdicts[finalState.verdict] ?? 0) + 1;
+          await persistEvaluation(d1, {
+            findingId: activeFindingId,
+            verdict: finalState.verdict,
+            confidence: finalState.confidenceScore,
+            validationMethod: finalState.validationMethod ?? 'llm',
+            validationStatus: finalState.validationStatus ?? 'UNVERIFIABLE',
+            reasoning: finalState.aiReasoning ?? '',
+            riskScore: finalState.riskScore,
+          });
+          totalEvaluated++;
+          verdicts[finalState.verdict] = (verdicts[finalState.verdict] ?? 0) + 1;
 
-        const icon = finalState.verdict === 'TRUE_POSITIVE' ? '🔴' : 
-                     finalState.verdict === 'NEEDS_HUMAN_REVIEW' ? '🟡' : '⚪';
-        console.log(`  ${icon} ${match.severity.padEnd(8)} ${match.patternId.padEnd(30)} ${match.filePath}:${match.lineNumber}  [conf:${finalState.confidenceScore.toFixed(2)}]`);
-      } catch (e) {
-        console.error(`  [!] Error processing match: ${e}`);
+          const icon = finalState.verdict === 'TRUE_POSITIVE' ? '🔴' : 
+                       finalState.verdict === 'NEEDS_HUMAN_REVIEW' ? '🟡' : '⚪';
+          console.log(`  ${icon} ${match.severity.padEnd(8)} ${match.patternId.padEnd(30)} ${match.filePath}:${match.lineNumber}  [conf:${finalState.confidenceScore.toFixed(2)}]`);
+        } catch (e) {
+          console.error(`  [!] Error processing match: ${e}`);
+        }
       }
-    }
 
-    summaries.push({ repo: `${repo.owner}/${repo.name}`, filesScanned: filesScannedTotal, matches: matches.length, evaluated: matchesSlice.length, scanMs: scanTime, verdicts, errors: errorsList });
+      summaries.push({ repo: `${repo.owner}/${repo.name}`, filesScanned: filesScannedTotal, matches: matches.length, evaluated: matchesSlice.length, scanMs: scanTime, verdicts, errors: errorsList });
+    } catch (err) {
+      const repoName = repo ? `${repo.owner}/${repo.name}` : `ID ${repoId}`;
+      console.error(`\n[!] Error scanning repository ${repoName}: ${err}`);
+      if (repo) {
+        try {
+          await d1.prepare(`UPDATE repositories SET last_scan_status = 'FAILED', last_scan_at = datetime('now') WHERE id = ?`)
+            .bind(repoId).run();
+        } catch (dbErr) {
+          console.error(`  [!] Failed to update status to FAILED in DB: ${dbErr}`);
+        }
+      }
+      summaries.push({
+        repo: repoName,
+        filesScanned: 0,
+        matches: 0,
+        evaluated: 0,
+        scanMs: 0,
+        verdicts: { TRUE_POSITIVE: 0, NEEDS_HUMAN_REVIEW: 0, FALSE_POSITIVE: 0 },
+        errors: [`Repository scan failed completely: ${err instanceof Error ? err.message : String(err)}`]
+      });
+    }
   }
 
   const aggregateVerdicts = { TRUE_POSITIVE: 0, NEEDS_HUMAN_REVIEW: 0, FALSE_POSITIVE: 0 };

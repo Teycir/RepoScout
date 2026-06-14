@@ -9,6 +9,7 @@
 import { Unzip, UnzipInflate } from 'fflate';
 import { scanSource, shouldSkipPath } from '../lib/scanner.js';
 import type { Match, Template } from '../lib/types.js';
+import type { D1Database } from '../lib/cloudflare-stubs.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -18,6 +19,7 @@ const MAX_ZIPBALL_SIZE     = 150 * 1024 * 1024; // 150 MB hard abort
 const MAX_MATCHES_PER_SCAN = 2_000;
 const MAX_FILE_BYTES       = 10 * 1024 * 1024;  // 10 MB per file
 const LARGE_REPO_KB        = 50_000;             // 50 MB in KB (GitHub repo.size unit)
+const MAX_REPO_SIZE_KB     = 500_000;            // 500 MB in KB (skip scans above this)
 const TREE_BATCH_SIZE      = 5;                  // concurrent blob fetches
 
 // Per-request timeout, ported from secretscout-core's GitHubFetcher
@@ -331,6 +333,12 @@ async function scanViaGitTrees(
           return !BINARY_EXTS.has(ext);
         })()
     );
+
+    const MAX_TREE_FILES_TO_SCAN = 100;
+    if (tree.length > MAX_TREE_FILES_TO_SCAN) {
+      errors.push(`${owner}/${repo}: repository has ${tree.length} files. Git Trees scanning is capped at first ${MAX_TREE_FILES_TO_SCAN} files to prevent rate-limit exhaustion.`);
+      tree = tree.slice(0, MAX_TREE_FILES_TO_SCAN);
+    }
   } catch (e) {
     return {
       matches:      [],
@@ -406,6 +414,18 @@ export async function scanRepo(
     repoSizeKb = (body as { size?: number }).size ?? 0;
   } catch {
     // If we can't get metadata, attempt zipball anyway
+  }
+
+  if (repoSizeKb > MAX_REPO_SIZE_KB) {
+    const errorMsg = `Repository ${owner}/${repo} is too large (${Math.round(repoSizeKb / 1024)} MB, limit: ${MAX_REPO_SIZE_KB / 1024} MB) — scan skipped to prevent API quota exhaustion`;
+    console.warn(`[scanner] ${errorMsg}`);
+    return {
+      matches: [],
+      filesScanned: 0,
+      bytesRead: 0,
+      errors: [errorMsg],
+      rateLimit: { remaining: 4999, resetIso: null },
+    };
   }
 
   if (repoSizeKb > LARGE_REPO_KB) {

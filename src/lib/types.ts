@@ -2,6 +2,8 @@
 // TypeScript port of secretscout-types/src/lib.rs
 // Single source of truth for all domain types shared across scanner, validator, pipeline, and UI.
 
+import type { D1Database, KVNamespace, Ai } from './cloudflare-stubs.js';
+
 // ---------------------------------------------------------------------------
 // Templates & Patterns
 // ---------------------------------------------------------------------------

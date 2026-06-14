@@ -7,6 +7,7 @@ import { validateCredential } from "../lib/validator.js";
 import { isLikelyPlaceholder } from "../lib/scanner.js";
 import { findingRiskScore } from "../lib/types.js";
 import type { Severity, Verdict } from "../lib/types.js";
+import type { D1Database, KVNamespace, Ai } from "../lib/cloudflare-stubs.js";
 
 // ---------------------------------------------------------------------------
 // Env binding interface

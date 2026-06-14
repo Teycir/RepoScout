@@ -169,6 +169,9 @@ async function main() {
   }
   console.log(`✓ Loaded ${tokens.length} GitHub PAT(s)`);
 
+  let tokenIdx = 0;
+  const nextToken = (): string => tokens[tokenIdx++ % tokens.length]!;
+
   // Verify Ollama
   try {
     const probe = await fetch(`${OLLAMA_BASE}/api/tags`, { signal: AbortSignal.timeout(5000) });
@@ -211,7 +214,7 @@ async function main() {
 
   // Run Crawler
   console.log('\n[Phase 1] Running GitHub Search crawler...');
-  const crawlResult = await discoverRepos(env, tokens[0]!);
+  const crawlResult = await discoverRepos(env, nextToken());
   console.log(`  Discovered : ${crawlResult.reposDiscovered} new repositories`);
   console.log(`  Updated    : ${crawlResult.reposUpdated} updated repositories`);
   console.log(`  Eligible   : ${crawlResult.reposEligible.length} repositories for scan`);
@@ -226,9 +229,10 @@ async function main() {
     process.exit(0);
   }
 
-  // Scan discovered repositories (limit to first 3 to prevent rate limit exhaustion)
-  const reposToScan = crawlResult.reposEligible.slice(0, 3);
-  console.log(`\n[Phase 2] Scanning a sample of ${reposToScan.length} discovered repositories...`);
+  // Scan discovered repositories
+  const maxRepos = parseInt(process.argv[2] || '') || crawlResult.reposEligible.length;
+  const reposToScan = crawlResult.reposEligible.slice(0, maxRepos);
+  console.log(`\n[Phase 2] Scanning ${reposToScan.length} discovered repositories...`);
 
   const patterns = JSON.parse(readFileSync(join(ROOT, 'src/scan-worker/patterns.json'), 'utf8'));
   const pipeline = createScanValidationGraph(env);
@@ -243,144 +247,167 @@ async function main() {
   const summaries: any[] = [];
 
   for (const repoId of reposToScan) {
-    const repo = await d1.prepare(`SELECT * FROM repositories WHERE id = ?`).bind(repoId).first<any>();
-    if (!repo) continue;
+    let repo: any = null;
+    try {
+      repo = await d1.prepare(`SELECT * FROM repositories WHERE id = ?`).bind(repoId).first<any>();
+      if (!repo) continue;
 
-    console.log(`\n────────────────────────────────────────────────────────────────`);
-    console.log(`Scanning ${repo.owner}/${repo.name}...`);
+      console.log(`\n────────────────────────────────────────────────────────────────`);
+      console.log(`Scanning ${repo.owner}/${repo.name}...`);
 
-    const scanStart = Date.now();
-    const commits = await getLast5Commits(repo.owner, repo.name, tokens[0]!);
-    console.log(`  Depth: Scanning last ${commits.length} edits (commits)...`);
+      const scanStart = Date.now();
+      const commits = await getLast5Commits(repo.owner, repo.name, nextToken());
+      console.log(`  Depth: Scanning last ${commits.length} edits (commits)...`);
 
-    const allMatchesMap = new Map<string, any>();
-    let filesScannedTotal = 0;
-    const errorsList: string[] = [];
+      const allMatchesMap = new Map<string, any>();
+      let filesScannedTotal = 0;
+      const errorsList: string[] = [];
 
-    for (let idx = 0; idx < commits.length; idx++) {
-      const sha = commits[idx]!;
-      console.log(`    → Scanning edit ${idx + 1}/${commits.length} (commit ${sha.slice(0, 7)})`);
-      try {
-        const result = await scanRepo(repo.owner, repo.name, tokens[0]!, patterns, sha);
-        filesScannedTotal += result.filesScanned;
-        if (result.errors) errorsList.push(...result.errors);
-        for (const m of result.matches) {
-          const key = `${m.filePath}:${m.lineNumber}:${m.patternId}:${m.matchedText}`;
-          if (!allMatchesMap.has(key)) {
-            allMatchesMap.set(key, { ...m, commitSha: sha });
+      for (let idx = 0; idx < commits.length; idx++) {
+        const sha = commits[idx]!;
+        console.log(`    → Scanning edit ${idx + 1}/${commits.length} (commit ${sha.slice(0, 7)})`);
+        try {
+          const result = await scanRepo(repo.owner, repo.name, nextToken(), patterns, sha);
+          filesScannedTotal += result.filesScanned;
+          if (result.errors) errorsList.push(...result.errors);
+          for (const m of result.matches) {
+            const key = `${m.filePath}:${m.lineNumber}:${m.patternId}:${m.matchedText}`;
+            if (!allMatchesMap.has(key)) {
+              allMatchesMap.set(key, { ...m, commitSha: sha });
+            }
           }
+        } catch (e) {
+          console.error(`      [!] failed scanning commit ${sha.slice(0, 7)}: ${e}`);
+          errorsList.push(`Commit ${sha.slice(0, 7)} scan failed: ${e}`);
         }
-      } catch (e) {
-        console.error(`      [!] failed scanning commit ${sha.slice(0, 7)}: ${e}`);
-        errorsList.push(`Commit ${sha.slice(0, 7)} scan failed: ${e}`);
       }
+
+      const matches = Array.from(allMatchesMap.values());
+      const scanTime = Date.now() - scanStart;
+      totalFilesScanned += filesScannedTotal;
+      totalFindings += matches.length;
+
+      console.log(`  Files scanned : ${filesScannedTotal} (across all edits)`);
+      console.log(`  Unique matches: ${matches.length}`);
+      console.log(`  Scan time     : ${scanTime}ms`);
+      if (errorsList.length) console.log(`  errors: ${errorsList.slice(0, 3).join('; ')}`);
+
+      await d1.prepare(`UPDATE repositories SET last_scan_status = 'COMPLETED', last_scan_at = datetime('now') WHERE id = ?`)
+        .bind(repoId).run();
+
+      const verdicts: Record<string, number> = { TRUE_POSITIVE: 0, NEEDS_HUMAN_REVIEW: 0, FALSE_POSITIVE: 0 };
+      const matchesSlice = matches.slice(0, 10); // Run LangGraph on up to 10 findings per repo
+
+      for (const match of matchesSlice) {
+        const findingId = crypto.randomUUID();
+
+        // Persist finding
+        let activeFindingId = findingId;
+        try {
+          const row = await d1.prepare(`
+            INSERT INTO findings
+              (id, scan_run_id, repo_id, file_path, file_url, line_number,
+               matched_text, line_content, context, pattern_id, template_id, severity)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(repo_id, file_path, line_number, pattern_id, matched_text)
+            DO UPDATE SET scan_run_id = excluded.scan_run_id
+            RETURNING id
+          `).bind(
+            findingId, scanRunId, repo.id,
+            match.filePath,
+            `https://github.com/${repo.owner}/${repo.name}/blob/${match.commitSha || 'HEAD'}/${match.filePath}#L${match.lineNumber}`,
+            match.lineNumber,
+            match.matchedText,
+            match.context.split('\n')[0] ?? '',
+            JSON.stringify(match.context.split('\n')),
+            match.patternId, match.templateId, match.severity,
+          ).first<{ id: string }>();
+          activeFindingId = row?.id ?? findingId;
+        } catch (e) {
+          console.error(`  [!] finding persist: ${e}`);
+          continue;
+        }
+
+        // LangGraph pipeline
+        let finalState: any;
+        try {
+          finalState = await pipeline.invoke({
+            findingId: activeFindingId,
+            repoName: `${repo.owner}/${repo.name}`,
+            filePath: match.filePath,
+            lineNumber: match.lineNumber,
+            matchedText: match.matchedText,
+            rawMatchedText: match.rawMatchedText,
+            lineContent: match.context.split('\n')[0] ?? '',
+            surroundingContext: match.context,
+            patternId: match.patternId,
+            templateId: match.templateId,
+            severity: match.severity,
+            isHeuristicPlaceholder: false,
+            validationStatus: 'UNVERIFIABLE' as const,
+            verdict: 'NEEDS_HUMAN_REVIEW' as const,
+            aiReasoning: '',
+            confidenceScore: 0,
+            riskScore: 0,
+            validationMethod: 'heuristic' as const,
+          });
+        } catch (e) {
+          console.error(`  [!] LangGraph pipeline failed: ${e}`);
+          continue;
+        }
+
+        // Persist evaluation
+        try {
+          await persistEvaluation(d1, {
+            findingId: activeFindingId,
+            verdict: finalState.verdict,
+            confidence: finalState.confidenceScore,
+            validationMethod: finalState.validationMethod ?? 'llm',
+            validationStatus: finalState.validationStatus ?? 'UNVERIFIABLE',
+            reasoning: finalState.aiReasoning ?? '',
+            riskScore: finalState.riskScore,
+          });
+          totalEvaluated++;
+          verdicts[finalState.verdict] = (verdicts[finalState.verdict] ?? 0) + 1;
+
+          const icon = finalState.verdict === 'TRUE_POSITIVE' ? '🔴' : 
+                       finalState.verdict === 'NEEDS_HUMAN_REVIEW' ? '🟡' : '⚪';
+          console.log(`  ${icon} ${match.severity.padEnd(8)} ${match.patternId.padEnd(30)} ${match.filePath}:${match.lineNumber}  [conf:${finalState.confidenceScore.toFixed(2)}]`);
+        } catch (e) {
+          console.error(`  [!] evaluation persist failed: ${e}`);
+        }
+      }
+
+      summaries.push({
+        repo: `${repo.owner}/${repo.name}`,
+        filesScanned: filesScannedTotal,
+        matches: matches.length,
+        evaluated: matchesSlice.length,
+        scanMs: scanTime,
+        verdicts,
+        errors: errorsList
+      });
+    } catch (err) {
+      const repoName = repo ? `${repo.owner}/${repo.name}` : `ID ${repoId}`;
+      console.error(`\n[!] Error scanning repository ${repoName}: ${err}`);
+      if (repo) {
+        try {
+          await d1.prepare(`UPDATE repositories SET last_scan_status = 'FAILED', last_scan_at = datetime('now') WHERE id = ?`)
+            .bind(repoId).run();
+        } catch (dbErr) {
+          console.error(`  [!] Failed to update status to FAILED in DB: ${dbErr}`);
+        }
+      }
+      summaries.push({
+        repo: repoName,
+        filesScanned: 0,
+        matches: 0,
+        evaluated: 0,
+        scanMs: 0,
+        verdicts: { TRUE_POSITIVE: 0, NEEDS_HUMAN_REVIEW: 0, FALSE_POSITIVE: 0 },
+        errors: [`Repository scan failed completely: ${err instanceof Error ? err.message : String(err)}`]
+      });
     }
-
-    const matches = Array.from(allMatchesMap.values());
-    const scanTime = Date.now() - scanStart;
-    totalFilesScanned += filesScannedTotal;
-    totalFindings += matches.length;
-
-    console.log(`  Files scanned : ${filesScannedTotal} (across all edits)`);
-    console.log(`  Unique matches: ${matches.length}`);
-    console.log(`  Scan time     : ${scanTime}ms`);
-    if (errorsList.length) console.log(`  errors: ${errorsList.slice(0, 3).join('; ')}`);
-
-    await d1.prepare(`UPDATE repositories SET last_scan_status = 'COMPLETED', last_scan_at = datetime('now') WHERE id = ?`)
-      .bind(repoId).run();
-
-    const verdicts: Record<string, number> = { TRUE_POSITIVE: 0, NEEDS_HUMAN_REVIEW: 0, FALSE_POSITIVE: 0 };
-    const matchesSlice = matches.slice(0, 10); // Run LangGraph on up to 10 findings per repo
-
-    for (const match of matchesSlice) {
-      const findingId = crypto.randomUUID();
-
-      // Persist finding
-      let activeFindingId = findingId;
-      try {
-        const row = await d1.prepare(`
-          INSERT INTO findings
-            (id, scan_run_id, repo_id, file_path, file_url, line_number,
-             matched_text, line_content, context, pattern_id, template_id, severity)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(repo_id, file_path, line_number, pattern_id, matched_text)
-          DO UPDATE SET scan_run_id = excluded.scan_run_id
-          RETURNING id
-        `).bind(
-          findingId, scanRunId, repo.id,
-          match.filePath,
-          `https://github.com/${repo.owner}/${repo.name}/blob/${match.commitSha || 'HEAD'}/${match.filePath}#L${match.lineNumber}`,
-          match.lineNumber,
-          match.matchedText,
-          match.context.split('\n')[0] ?? '',
-          JSON.stringify(match.context.split('\n')),
-          match.patternId, match.templateId, match.severity,
-        ).first<{ id: string }>();
-        activeFindingId = row?.id ?? findingId;
-      } catch (e) {
-        console.error(`  [!] finding persist: ${e}`);
-        continue;
-      }
-
-      // LangGraph pipeline
-      let finalState: any;
-      try {
-        finalState = await pipeline.invoke({
-          findingId: activeFindingId,
-          repoName: `${repo.owner}/${repo.name}`,
-          filePath: match.filePath,
-          lineNumber: match.lineNumber,
-          matchedText: match.matchedText,
-          rawMatchedText: match.rawMatchedText,
-          lineContent: match.context.split('\n')[0] ?? '',
-          surroundingContext: match.context,
-          patternId: match.patternId,
-          templateId: match.templateId,
-          severity: match.severity,
-          isHeuristicPlaceholder: false,
-          validationStatus: 'UNVERIFIABLE' as const,
-          verdict: 'NEEDS_HUMAN_REVIEW' as const,
-          aiReasoning: '',
-          confidenceScore: 0,
-          riskScore: 0,
-          validationMethod: 'heuristic' as const,
-        });
-      } catch (e) {
-        console.error(`  [!] LangGraph pipeline failed: ${e}`);
-        continue;
-      }
-
-      // Persist evaluation
-      try {
-        await persistEvaluation(d1, {
-          findingId: activeFindingId,
-          verdict: finalState.verdict,
-          confidence: finalState.confidenceScore,
-          validationMethod: finalState.validationMethod ?? 'llm',
-          validationStatus: finalState.validationStatus ?? 'UNVERIFIABLE',
-          reasoning: finalState.aiReasoning ?? '',
-          riskScore: finalState.riskScore,
-        });
-        totalEvaluated++;
-        verdicts[finalState.verdict] = (verdicts[finalState.verdict] ?? 0) + 1;
-
-        const icon = finalState.verdict === 'TRUE_POSITIVE' ? '🔴' : 
-                     finalState.verdict === 'NEEDS_HUMAN_REVIEW' ? '🟡' : '⚪';
-        console.log(`  ${icon} ${match.severity.padEnd(8)} ${match.patternId.padEnd(30)} ${match.filePath}:${match.lineNumber}  [conf:${finalState.confidenceScore.toFixed(2)}]`);
-      } catch (e) {
-        console.error(`  [!] evaluation persist failed: ${e}`);
-      }
-    }
-
-    summaries.push({
-      repo: `${repo.owner}/${repo.name}`,
-      filesScanned: filesScannedTotal,
-      matches: matches.length,
-      evaluated: matchesSlice.length,
-      scanMs: scanTime,
-      verdicts,
-      errors: errorsList
-    });
   }
 
   await d1.prepare(`UPDATE scan_runs SET status = 'COMPLETED', completed_at = datetime('now') WHERE id = ?`)
