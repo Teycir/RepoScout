@@ -1,10 +1,6 @@
 // src/lib/env.ts
 // Single source of truth for all environment variables.
 // Import GITHUB_TOKENS (and others) from here — never read process.env directly elsewhere.
-//
-// For the scan worker (Cloudflare Workers runtime) secrets are injected via
-// wrangler secrets / .dev.vars and accessed through the Env binding.
-// For scripts (Node.js, tsx) we load from .env via this module.
 
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -98,12 +94,4 @@ export const URLSCAN_KEYS: readonly string[] = getNumbered('URLSCAN', 12);
 export const PROTONVPN_USERNAME: string = get('PROTONVPN_USERNAME');
 export const PROTONVPN_PASSWORD: string = get('PROTONVPN_PASSWORD');
 
-// ---------------------------------------------------------------------------
-// Cloudflare resource IDs (non-secret — safe to commit)
-// ---------------------------------------------------------------------------
 
-export const CF_ACCOUNT_ID    = 'b1dea8ea21722d03763e3eff6ab8c5c1';
-export const CF_D1_DATABASE   = 'reposcout';
-export const CF_D1_ID         = '67fa825b-9f3e-478c-99d2-3e5cc1b0f3de';
-export const CF_KV_ID         = 'ed3c323de9cc48a4b332beec939597a4';
-export const CF_SUMMARY_MODEL = '@cf/mistralai/mistral-small-3.1-24b-instruct';

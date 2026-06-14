@@ -1,13 +1,12 @@
 // src/scan-worker/pipeline.ts
 // LangGraph 5-node AI verification pipeline.
-// Upgraded to spec: NEEDS_HUMAN_REVIEW verdict, conditional edges, KV quota guard.
+// Upgraded to spec: NEEDS_HUMAN_REVIEW verdict, conditional edges, cache quota guard.
 
 import { StateGraph, Annotation } from "@langchain/langgraph";
 import { validateCredential } from "../lib/validator.js";
 import { isLikelyPlaceholder } from "../lib/scanner.js";
 import { findingRiskScore } from "../lib/types.js";
-import type { Severity, Verdict } from "../lib/types.js";
-import type { D1Database, KVNamespace, Ai } from "../lib/cloudflare-stubs.js";
+import type { Severity, Verdict, Database, CacheStore, AiService } from "../lib/types.js";
 
 // ---------------------------------------------------------------------------
 // Robust JSON parser helper for LLM responses
@@ -66,9 +65,9 @@ function robustJsonParse<T extends Record<string, any>>(text: string): T {
 // ---------------------------------------------------------------------------
 
 export interface PipelineEnv {
-  DB: D1Database;
-  CACHE: KVNamespace;
-  AI: Ai;
+  DB: Database;
+  CACHE: CacheStore;
+  AI: AiService;
   SUMMARY_MODEL?: string;
 }
 
@@ -103,31 +102,44 @@ export const ScanFindingState = Annotation.Root({
 type StateType = typeof ScanFindingState.State;
 
 // ---------------------------------------------------------------------------
-// KV quota guard
+// Cache quota guard → SQLite atomic counter for race-safety
 // Model: @cf/mistralai/mistral-small-3.1-24b-instruct
 // Neuron cost: ~31 876/M input + ~50 488/M output tokens
 // Per call estimate: ~400 input + ~150 output tokens ≈ 21 neurons/call
 // Free tier: 10 000 neurons/day → ~476 calls/day across 3 runs ≈ 158/run
-// Cap set conservatively at 450 to leave headroom for context-inference calls
+// LLM_DAILY_CAP: Set to 450 (below theoretical max 476) to leave headroom for:
+//   - Context inference retries (Shopify/Algolia/Firebase domain extraction)
+//   - Impact summaries (TRUE_POSITIVE findings only)
+//   - Burst variance in token usage per classification
 // ---------------------------------------------------------------------------
 
 const LLM_DAILY_CAP = 450;
 
-async function checkLlmQuota(cache: KVNamespace): Promise<boolean> {
+async function ensureLlmQuotaTable(db: D1Database): Promise<void> {
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS llm_quota_daily (
+      date TEXT PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+}
+
+async function checkLlmQuota(db: D1Database): Promise<boolean> {
+  await ensureLlmQuotaTable(db);
   const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const key = `llm_quota:${date}`;
-  const raw = await cache.get(key);
-  const used = raw ? parseInt(raw, 10) : 0;
+  const row = await db
+    .prepare('SELECT count FROM llm_quota_daily WHERE date = ?')
+    .bind(date)
+    .first<{ count: number }>();
+  const used = row?.count ?? 0;
   return used < LLM_DAILY_CAP;
 }
 
-async function incrementLlmQuota(cache: KVNamespace): Promise<void> {
+async function incrementLlmQuota(db: D1Database): Promise<void> {
   const date = new Date().toISOString().slice(0, 10);
-  const key = `llm_quota:${date}`;
-  const raw = await cache.get(key);
-  const next = (raw ? parseInt(raw, 10) : 0) + 1;
-  // TTL = 26 hours to ensure cleanup
-  await cache.put(key, String(next), { expirationTtl: 26 * 60 * 60 });
+  // Atomic increment with INSERT OR IGNORE + UPDATE
+  await db.prepare(`INSERT OR IGNORE INTO llm_quota_daily (date, count) VALUES (?, 0)`).bind(date).run();
+  await db.prepare(`UPDATE llm_quota_daily SET count = count + 1 WHERE date = ?`).bind(date).run();
 }
 
 // ---------------------------------------------------------------------------
@@ -368,7 +380,7 @@ async function contextInferenceNode(
 
   if (!needsContextInference) return {};
 
-  const quotaOk = await checkLlmQuota(env.CACHE);
+  const quotaOk = await checkLlmQuota(env.DB);
   if (!quotaOk) return {};
 
   const model = env.SUMMARY_MODEL ?? "@cf/mistralai/mistral-small-3.1-24b-instruct";
@@ -379,6 +391,14 @@ async function contextInferenceNode(
     firebase:  "Extract the Firebase project ID from the surrounding code.",
     okta:      "Extract the Okta domain (e.g. dev-123456.okta.com) from the surrounding code.",
     braintree: "Determine whether this is a sandbox or production Braintree token from the surrounding code.",
+  };
+
+  const validationPatterns: Record<string, RegExp> = {
+    shopify:   /^[\w-]+\.myshopify\.com$/,
+    algolia:   /^[A-Z0-9]{10}$/,
+    firebase:  /^[\w-]+$/,
+    okta:      /^[\w-]+\.okta\.com$/,
+    braintree: /^(sandbox|production)$/i,
   };
 
   const providerKey = Object.keys(providerHints).find(k => pid.includes(k)) ?? "";
@@ -411,12 +431,19 @@ Respond ONLY with JSON:
       ],
     });
 
-    await incrementLlmQuota(env.CACHE);
+    await incrementLlmQuota(env.DB);
 
     const text = (response.response ?? response.text ?? "").replace(/```json|```/g, "").trim();
     const parsed = robustJsonParse<{ found: boolean; value: string | null; reasoning: string }>(text);
 
     if (!parsed.found || !parsed.value) return {};
+
+    // Validate extracted value against expected format
+    const validator = validationPatterns[providerKey];
+    if (validator && !validator.test(parsed.value)) {
+      console.warn(`[pipeline] Context inference: extracted value "${parsed.value}" failed validation for ${providerKey}`);
+      return {};
+    }
 
     // Retry validation with the extracted context injected into the token
     const { validateCredential } = await import("../lib/validator.js");
@@ -456,7 +483,7 @@ async function llmClassificationNode(
   state: StateType,
   env: PipelineEnv,
 ): Promise<Partial<StateType>> {
-  const quotaOk = await checkLlmQuota(env.CACHE);
+  const quotaOk = await checkLlmQuota(env.DB);
   if (!quotaOk) {
     return {
       verdict: "NEEDS_HUMAN_REVIEW",
@@ -508,7 +535,7 @@ Respond ONLY with valid JSON:
     }>(text);
 
     // Increment quota only after we know the response parsed successfully.
-    await incrementLlmQuota(env.CACHE);
+    await incrementLlmQuota(env.DB);
 
     // Confidence < 0.50 → escalate to analyst
     const verdict: Verdict =
@@ -545,6 +572,19 @@ async function riskScorerNode(
 }
 
 // ---------------------------------------------------------------------------
+// Security: Zero raw secrets from memory after processing
+// ---------------------------------------------------------------------------
+
+function zeroRawSecret(state: StateType): void {
+  if (state.rawMatchedText) {
+    // Overwrite with random data then empty string to prevent memory forensics
+    const len = state.rawMatchedText.length;
+    (state as any).rawMatchedText = '\x00'.repeat(len);
+    (state as any).rawMatchedText = '';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Persist to D1
 // ---------------------------------------------------------------------------
 
@@ -561,6 +601,7 @@ export interface PersistInput {
 export async function persistEvaluation(
   db: D1Database,
   input: PersistInput,
+  state?: StateType,
 ): Promise<void> {
   const id = crypto.randomUUID();
   await db
@@ -586,6 +627,9 @@ export async function persistEvaluation(
       input.reasoning,
     )
     .run();
+  
+  // Zero raw secret after successful persistence
+  if (state) zeroRawSecret(state);
 }
 
 // ---------------------------------------------------------------------------
@@ -600,7 +644,7 @@ async function impactSummaryNode(
 ): Promise<Partial<StateType>> {
   if (state.verdict !== "TRUE_POSITIVE") return {};
 
-  const quotaOk = await checkLlmQuota(env.CACHE);
+  const quotaOk = await checkLlmQuota(env.DB);
   if (!quotaOk) return {};
 
   const model = env.SUMMARY_MODEL ?? "@cf/mistralai/mistral-small-3.1-24b-instruct";
@@ -635,7 +679,7 @@ Respond ONLY with JSON:
       ],
     });
 
-    await incrementLlmQuota(env.CACHE);
+    await incrementLlmQuota(env.DB);
 
     const text = (response.response ?? response.text ?? "").replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(text) as {

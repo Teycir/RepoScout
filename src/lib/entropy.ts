@@ -78,13 +78,13 @@ export function getThreshold(s: string): number {
 
 /** Returns true if `s` has high Shannon entropy above `threshold`. */
 export function isHighEntropy(s: string, threshold: number): boolean {
-  if (s.length < 16) return false;
+  if (s.length < 8) return false;
   return calculateEntropy(s) >= threshold;
 }
 
 /** Charset-aware high-entropy check — normalised > 0.75 = high entropy. */
 export function isHighEntropyCharsetAware(s: string): boolean {
-  if (s.length < 16) return false;
+  if (s.length < 8) return false;
   const [normalised] = calculateCharsetAwareEntropy(s);
   return normalised >= 0.75;
 }
@@ -94,7 +94,7 @@ export function isHighEntropyCharsetAware(s: string): boolean {
 // ---------------------------------------------------------------------------
 
 export function isBase64Like(s: string): boolean {
-  if (s.length < 16) return false;
+  if (s.length < 8) return false;
   const base64Chars = [...s].filter(
     (c) => /[a-zA-Z0-9+/=]/.test(c)
   ).length;
@@ -102,7 +102,7 @@ export function isBase64Like(s: string): boolean {
 }
 
 export function isHexLike(s: string): boolean {
-  if (s.length < 16) return false;
+  if (s.length < 8) return false;
   return /^[a-fA-F0-9]+$/.test(s);
 }
 
@@ -111,7 +111,7 @@ export function isHexLike(s: string): boolean {
 // Mirrors ENTROPY_WORD_REGEX in scanner.rs
 // ---------------------------------------------------------------------------
 
-export const ENTROPY_WORD_REGEX = /[a-zA-Z0-9+/=_-]{16,}/g;
+export const ENTROPY_WORD_REGEX = /[a-zA-Z0-9+/=_-]{8,}/g;
 
 /** Extract all candidate high-entropy substrings from a source string. */
 export function findHighEntropyStrings(

@@ -3,14 +3,14 @@
 // without requiring a manual seed list.
 //
 // Strategy:
-//   1. Read the last-run cursor from KV ("crawler:since" key, ISO-8601).
+//   1. Read the last-run cursor from cache ("crawler:since" key, ISO-8601).
 //      On first run, defaults to 24 hours ago.
 //   2. Page through GitHub Search API  (q=pushed:>SINCE is:public)
 //      sorted by "updated", newest first — up to MAX_SEARCH_PAGES pages.
-//   3. For repos already in D1: update pushed_at + mark for re-scan only if
+//   3. For repos already in DB: update pushed_at + mark for re-scan only if
 //      pushed_at advanced (i.e. there are genuinely new commits).
 //   4. For new repos: INSERT into repositories with source='crawler'.
-//   5. Write the current run's start time as the new cursor into KV.
+//   5. Write the current run's start time as the new cursor into cache.
 //
 // GitHub Search rate limits:
 //   Authenticated: 30 req/min (shared with the PAT pool).
@@ -18,7 +18,7 @@
 //   search requests per crawler run, well within budget.
 //
 // The crawler runs at the START of every scheduled scan, before the scan
-// loop picks repos from D1.  This means newly-discovered repos are
+// loop picks repos from DB.  This means newly-discovered repos are
 // immediately eligible for scanning in the same cron invocation.
 
 import type { Env } from '../lib/types.js';
@@ -27,11 +27,14 @@ import type { Env } from '../lib/types.js';
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_SEARCH_PAGES    = 5;    // 5 pages × 30 items = up to 150 repos/run
+// MAX_SEARCH_PAGES: GitHub Search API rate limit is 30 req/min (authenticated).
+// 5 pages × 30 items = 150 repos/run. Leaves 25 requests for other API calls.
+const MAX_SEARCH_PAGES    = 5;
 const ITEMS_PER_PAGE      = 30;   // GitHub Search max per_page
 const DEFAULT_LOOKBACK_H  = 24;   // hours to look back on first run
-const KV_CURSOR_KEY       = 'crawler:since';
-const KV_RUNID_KEY        = 'crawler:last_run_id';
+const CACHE_CURSOR_KEY    = 'crawler:since';
+const CACHE_RUNID_KEY     = 'crawler:last_run_id';
+const CACHE_BACKOFF_KEY   = 'crawler:rate_limit_until'; // ISO-8601 timestamp
 
 // Topics / languages we actively want to scan — leave empty to scan everything.
 // Having at least a language filter helps surface real code repos over mirrors.
@@ -151,13 +154,55 @@ export async function discoverRepos(
   const reposEligible: string[] = [];
 
   // ------------------------------------------------------------------
+  // 0. Check rate-limit backoff
+  // ------------------------------------------------------------------
+  try {
+    const backoffUntil = await env.CACHE.get(CACHE_BACKOFF_KEY);
+    if (backoffUntil && new Date(backoffUntil) > new Date()) {
+      const msg = `Crawler paused due to rate-limit until ${backoffUntil}`;
+      console.warn(`[crawler] ${msg}`);
+      return {
+        crawlerRunId,
+        reposDiscovered: 0,
+        reposUpdated: 0,
+        reposEligible: [],
+        nextCursor: new Date().toISOString(),
+        errors: [msg],
+      };
+    }
+  } catch (e) {
+    errors.push(`Failed to check backoff: ${e}`);
+  }
+
+  // ------------------------------------------------------------------
+  // 0. Check rate-limit backoff
+  // ------------------------------------------------------------------
+  try {
+    const backoffUntil = await env.CACHE.get(CACHE_BACKOFF_KEY);
+    if (backoffUntil && new Date(backoffUntil) > new Date()) {
+      const msg = `Crawler paused due to rate-limit until ${backoffUntil}`;
+      console.warn(`[crawler] ${msg}`);
+      return {
+        crawlerRunId,
+        reposDiscovered: 0,
+        reposUpdated: 0,
+        reposEligible: [],
+        nextCursor: new Date().toISOString(),
+        errors: [msg],
+      };
+    }
+  } catch (e) {
+    errors.push(`Failed to check backoff: ${e}`);
+  }
+
+  // ------------------------------------------------------------------
   // 1. Determine the "since" cursor — default to 24 h ago on first run
   // ------------------------------------------------------------------
   const runStartedAt = new Date().toISOString();
 
   let since: string;
   try {
-    const stored = await env.CACHE.get(KV_CURSOR_KEY);
+    const stored = await env.CACHE.get(CACHE_CURSOR_KEY);
     if (stored) {
       since = stored;
     } else {
@@ -199,7 +244,9 @@ export async function discoverRepos(
 
       // Back off if we're burning through rate limit
       if (remaining < 5) {
-        errors.push(`Crawler: search rate limit low (${remaining} remaining) — stopping early at page ${page}`);
+        const backoffUntil = resetIso ?? new Date(Date.now() + 3600000).toISOString(); // 1h fallback
+        await env.CACHE.put(CACHE_BACKOFF_KEY, backoffUntil, { expirationTtl: 7200 }).catch(() => {});
+        errors.push(`Crawler: search rate limit low (${remaining} remaining) — stopping early at page ${page}. Paused until ${backoffUntil}`);
         break;
       }
     } catch (e) {
@@ -283,8 +330,8 @@ export async function discoverRepos(
   const nextCursor = runStartedAt;
   try {
     // TTL = 30 days — crawler state should survive Workers KV evictions
-    await env.CACHE.put(KV_CURSOR_KEY, nextCursor, { expirationTtl: 30 * 24 * 60 * 60 });
-    await env.CACHE.put(KV_RUNID_KEY,  crawlerRunId, { expirationTtl: 30 * 24 * 60 * 60 });
+    await env.CACHE.put(CACHE_CURSOR_KEY, nextCursor, { expirationTtl: 30 * 24 * 60 * 60 });
+    await env.CACHE.put(CACHE_RUNID_KEY,  crawlerRunId, { expirationTtl: 30 * 24 * 60 * 60 });
   } catch (e) {
     errors.push(`Crawler: failed to persist KV cursor: ${e}`);
   }

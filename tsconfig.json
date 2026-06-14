@@ -11,7 +11,7 @@
     "noImplicitOverride": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node", "@cloudflare/workers-types"]
+    "types": ["node"]
   },
   "include": [
     "src/**/*.ts",

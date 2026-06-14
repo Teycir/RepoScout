@@ -1,47 +1,75 @@
 {
-  "timestamp": "2026-06-13T23:10:52.698Z",
-  "elapsedSeconds": 3603.6,
-  "lookbackCursor": "2026-06-12T22:10:49.152Z",
+  "timestamp": "2026-06-14T01:40:01.781Z",
+  "elapsedSeconds": 2843.9,
+  "lookbackCursor": "2026-06-13T00:52:37.932Z",
   "summary": {
-    "discovered": 99,
+    "discovered": 83,
     "updated": 0,
-    "eligible": 99,
-    "scanned": 99,
-    "filesScanned": 45554,
-    "totalFindings": 29028,
-    "totalEvaluated": 376,
+    "eligible": 83,
+    "scanned": 83,
+    "filesScanned": 217730,
+    "totalFindings": 27336,
+    "totalEvaluated": 306,
     "verdicts": {
-      "TRUE_POSITIVE": 49,
-      "NEEDS_HUMAN_REVIEW": 5,
-      "FALSE_POSITIVE": 322
+      "TRUE_POSITIVE": 65,
+      "NEEDS_HUMAN_REVIEW": 7,
+      "FALSE_POSITIVE": 234
     }
   },
   "scannedRepositories": [
     {
-      "repo": "theseeyora/aasvng",
-      "filesScanned": 10586,
+      "repo": "18406572644/lhd043",
+      "filesScanned": 0,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 153740,
+      "scanMs": 1394,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
         "FALSE_POSITIVE": 0
       },
       "errors": [
-        "theseeyora/aasvng: zipball stream error — TimeoutError: The operation was aborted due to timeout",
-        "theseeyora/aasvng: zipball stream error — TimeoutError: The operation was aborted due to timeout",
-        "theseeyora/aasvng: zipball stream error — TimeoutError: The operation was aborted due to timeout",
-        "theseeyora/aasvng: zipball stream error — TimeoutError: The operation was aborted due to timeout",
-        "theseeyora/aasvng: zipball stream error — TimeoutError: The operation was aborted due to timeout"
+        "HTTP 404 fetching zipball for 18406572644/lhd043"
       ]
     },
     {
-      "repo": "jbriddy/pxyqtw",
-      "filesScanned": 5,
+      "repo": "cfervela/alexandriaUnburntV2.0",
+      "filesScanned": 545,
+      "matches": 1006,
+      "evaluated": 10,
+      "scanMs": 5820,
+      "verdicts": {
+        "TRUE_POSITIVE": 2,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 8
+      },
+      "errors": []
+    },
+    {
+      "repo": "xingao0612/my-img-bed",
+      "filesScanned": 0,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 2344,
+      "scanMs": 2103,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "Repository xingao0612/my-img-bed is too large (4084 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository xingao0612/my-img-bed is too large (4084 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository xingao0612/my-img-bed is too large (4084 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository xingao0612/my-img-bed is too large (4084 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository xingao0612/my-img-bed is too large (4084 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
+      ]
+    },
+    {
+      "repo": "d1emat/Dr-muerte",
+      "filesScanned": 491,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 76627,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -50,49 +78,340 @@
       "errors": []
     },
     {
-      "repo": "r0cksteadyw00t/plex-logs",
-      "filesScanned": 489,
-      "matches": 238,
-      "evaluated": 10,
-      "scanMs": 81219,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": [
-        "r0cksteadyw00t/plex-logs: repository has 851 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for docs/index.html: TypeError: fetch failed",
-        "Blob fetch error for docs/.nojekyll: TypeError: fetch failed",
-        "r0cksteadyw00t/plex-logs: repository has 851 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "r0cksteadyw00t/plex-logs: repository has 851 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "r0cksteadyw00t/plex-logs: repository has 851 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "r0cksteadyw00t/plex-logs: repository has 851 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
-      ]
-    },
-    {
-      "repo": "AB94-nextleap/AI-Agent-MCP-Server",
-      "filesScanned": 0,
+      "repo": "pontechai/urclwa",
+      "filesScanned": 490,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 1538,
+      "scanMs": 45165,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
         "FALSE_POSITIVE": 0
       },
       "errors": [
-        "HTTP 404 fetching zipball for AB94-nextleap/AI-Agent-MCP-Server"
+        "pontechai/urclwa: repository has 35422 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:大发人工计划打法?.md: Error: GitHub API /repos/pontechai/urclwa/contents/2026专项指南:大发人工计划打法?.md → HTTP 404",
+        "Blob fetch error for 2026专项指南:大发在线计划全天计划?.md: Error: GitHub API /repos/pontechai/urclwa/contents/2026专项指南:大发在线计划全天计划?.md → HTTP 404",
+        "pontechai/urclwa: repository has 35421 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:大发人工计划打法?.md: Error: GitHub API /repos/pontechai/urclwa/contents/2026专项指南:大发人工计划打法?.md → HTTP 404",
+        "Blob fetch error for 2026专项指南:大发在线计划全天计划?.md: Error: GitHub API /repos/pontechai/urclwa/contents/2026专项指南:大发在线计划全天计划?.md → HTTP 404",
+        "pontechai/urclwa: repository has 35420 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:大发人工计划打法?.md: Error: GitHub API /repos/pontechai/urclwa/contents/2026专项指南:大发人工计划打法?.md → HTTP 404",
+        "Blob fetch error for 2026专项指南:大发在线计划全天计划?.md: Error: GitHub API /repos/pontechai/urclwa/contents/2026专项指南:大发在线计划全天计划?.md → HTTP 404",
+        "pontechai/urclwa: repository has 35419 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:大发人工计划打法?.md: Error: GitHub API /repos/pontechai/urclwa/contents/2026专项指南:大发人工计划打法?.md → HTTP 404",
+        "Blob fetch error for 2026专项指南:大发在线计划全天计划?.md: Error: GitHub API /repos/pontechai/urclwa/contents/2026专项指南:大发在线计划全天计划?.md → HTTP 404",
+        "pontechai/urclwa: repository has 35418 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:大发人工计划打法?.md: Error: GitHub API /repos/pontechai/urclwa/contents/2026专项指南:大发人工计划打法?.md → HTTP 404",
+        "Blob fetch error for 2026专项指南:大发在线计划全天计划?.md: Error: GitHub API /repos/pontechai/urclwa/contents/2026专项指南:大发在线计划全天计划?.md → HTTP 404"
       ]
     },
     {
-      "repo": "srihari-humbarwadi/srihari-humbarwadi",
-      "filesScanned": 3,
-      "matches": 5,
-      "evaluated": 5,
-      "scanMs": 1363,
+      "repo": "collinek/tewebz",
+      "filesScanned": 485,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 46049,
       "verdicts": {
         "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "collinek/tewebz: repository has 35663 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:3d精准100%稳贏计划.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:3d精准100%稳贏计划.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:单双稳赢的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "collinek/tewebz: repository has 35662 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:3d精准100%稳贏计划.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:3d精准100%稳贏计划.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:单双稳赢的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "collinek/tewebz: repository has 35661 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:3d精准100%稳贏计划.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:3d精准100%稳贏计划.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:单双稳赢的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "collinek/tewebz: repository has 35660 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:3d精准100%稳贏计划.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:3d精准100%稳贏计划.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:单双稳赢的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "collinek/tewebz: repository has 35659 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:3d精准100%稳贏计划.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:3d精准100%稳贏计划.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:单双稳赢的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/collinek/tewebz/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400"
+      ]
+    },
+    {
+      "repo": "FormMaintenance/phaacrje",
+      "filesScanned": 2,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 1376,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "UFP-21/neuro-prompt-studio-case-study",
+      "filesScanned": 7,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 10262,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "ekremarmagankarakas/TUIG",
+      "filesScanned": 63,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 4708,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "gxjishou/my-img-bed3",
+      "filesScanned": 0,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 1860,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "Repository gxjishou/my-img-bed3 is too large (1102 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository gxjishou/my-img-bed3 is too large (1102 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository gxjishou/my-img-bed3 is too large (1102 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository gxjishou/my-img-bed3 is too large (1102 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository gxjishou/my-img-bed3 is too large (1102 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
+      ]
+    },
+    {
+      "repo": "hellos-or/qcmrts",
+      "filesScanned": 490,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 44910,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "hellos-or/qcmrts: repository has 35526 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法|.md: Error: GitHub API /repos/hellos-or/qcmrts/contents/2026专项指南:单双稳赢的100%方法|.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/hellos-or/qcmrts/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "hellos-or/qcmrts: repository has 35525 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法|.md: Error: GitHub API /repos/hellos-or/qcmrts/contents/2026专项指南:单双稳赢的100%方法|.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/hellos-or/qcmrts/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "hellos-or/qcmrts: repository has 35524 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法|.md: Error: GitHub API /repos/hellos-or/qcmrts/contents/2026专项指南:单双稳赢的100%方法|.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/hellos-or/qcmrts/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "hellos-or/qcmrts: repository has 35523 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法|.md: Error: GitHub API /repos/hellos-or/qcmrts/contents/2026专项指南:单双稳赢的100%方法|.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/hellos-or/qcmrts/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "hellos-or/qcmrts: repository has 35522 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法|.md: Error: GitHub API /repos/hellos-or/qcmrts/contents/2026专项指南:单双稳赢的100%方法|.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/hellos-or/qcmrts/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400"
+      ]
+    },
+    {
+      "repo": "broryda/broryda.github.io",
+      "filesScanned": 320,
+      "matches": 3,
+      "evaluated": 3,
+      "scanMs": 23866,
+      "verdicts": {
+        "TRUE_POSITIVE": 1,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 2
+      },
+      "errors": []
+    },
+    {
+      "repo": "xinxin-qq/my-img-bed2",
+      "filesScanned": 0,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 1904,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "Repository xinxin-qq/my-img-bed2 is too large (3078 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository xinxin-qq/my-img-bed2 is too large (3078 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository xinxin-qq/my-img-bed2 is too large (3078 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository xinxin-qq/my-img-bed2 is too large (3078 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository xinxin-qq/my-img-bed2 is too large (3078 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
+      ]
+    },
+    {
+      "repo": "aobsky/adxdbq",
+      "filesScanned": 490,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 42739,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "aobsky/adxdbq: repository has 35670 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法|.md: Error: GitHub API /repos/aobsky/adxdbq/contents/2026专项指南:单双稳赢的100%方法|.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:单双稳贏的100%方法.md: Error: GitHub API /repos/aobsky/adxdbq/contents/2026专项指南:单双稳贏的100%方法.md → HTTP 400",
+        "aobsky/adxdbq: repository has 35669 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法|.md: Error: GitHub API /repos/aobsky/adxdbq/contents/2026专项指南:单双稳赢的100%方法|.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:单双稳贏的100%方法.md: Error: GitHub API /repos/aobsky/adxdbq/contents/2026专项指南:单双稳贏的100%方法.md → HTTP 400",
+        "aobsky/adxdbq: repository has 35668 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:单双稳贏的100%方法.md: Error: GitHub API /repos/aobsky/adxdbq/contents/2026专项指南:单双稳贏的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法|.md: Error: GitHub API /repos/aobsky/adxdbq/contents/2026专项指南:单双稳赢的100%方法|.md → HTTP 400",
+        "aobsky/adxdbq: repository has 35667 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法|.md: Error: GitHub API /repos/aobsky/adxdbq/contents/2026专项指南:单双稳赢的100%方法|.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:单双稳贏的100%方法.md: Error: GitHub API /repos/aobsky/adxdbq/contents/2026专项指南:单双稳贏的100%方法.md → HTTP 400",
+        "aobsky/adxdbq: repository has 35666 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:单双稳贏的100%方法.md: Error: GitHub API /repos/aobsky/adxdbq/contents/2026专项指南:单双稳贏的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:单双稳赢的100%方法|.md: Error: GitHub API /repos/aobsky/adxdbq/contents/2026专项指南:单双稳赢的100%方法|.md → HTTP 400"
+      ]
+    },
+    {
+      "repo": "chenxi750328ai/agent-jianghu",
+      "filesScanned": 500,
+      "matches": 35,
+      "evaluated": 10,
+      "scanMs": 34096,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": [
+        "chenxi750328ai/agent-jianghu: repository has 546 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "chenxi750328ai/agent-jianghu: repository has 546 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "chenxi750328ai/agent-jianghu: repository has 546 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "chenxi750328ai/agent-jianghu: repository has 546 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "chenxi750328ai/agent-jianghu: repository has 546 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
+      ]
+    },
+    {
+      "repo": "Espl0it/wechat-img-cdn",
+      "filesScanned": 0,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 2432,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "Repository Espl0it/wechat-img-cdn is too large (2732 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository Espl0it/wechat-img-cdn is too large (2732 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository Espl0it/wechat-img-cdn is too large (2732 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository Espl0it/wechat-img-cdn is too large (2732 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository Espl0it/wechat-img-cdn is too large (2732 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
+      ]
+    },
+    {
+      "repo": "Tzeusy/tze-hud",
+      "filesScanned": 8285,
+      "matches": 1280,
+      "evaluated": 10,
+      "scanMs": 38583,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 2,
+        "FALSE_POSITIVE": 8
+      },
+      "errors": []
+    },
+    {
+      "repo": "zsrundev1721/floating-ui",
+      "filesScanned": 631,
+      "matches": 103,
+      "evaluated": 10,
+      "scanMs": 7880,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "themeganews101/meganews-RSS-Hub",
+      "filesScanned": 140,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 14295,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "xkenneth90/turnos-online1",
+      "filesScanned": 6,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 1386,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "warlock001/react-native-smart-grid",
+      "filesScanned": 104,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 3183,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "Fadil123-hah/DILZXJASHER",
+      "filesScanned": 140,
+      "matches": 1315,
+      "evaluated": 10,
+      "scanMs": 5127,
+      "verdicts": {
+        "TRUE_POSITIVE": 10,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "hugonzalez10/plan-hugo",
+      "filesScanned": 170,
+      "matches": 35,
+      "evaluated": 10,
+      "scanMs": 6824,
+      "verdicts": {
+        "TRUE_POSITIVE": 5,
         "NEEDS_HUMAN_REVIEW": 0,
         "FALSE_POSITIVE": 5
       },
@@ -103,26 +422,26 @@
       "filesScanned": 0,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 1851,
+      "scanMs": 1926,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
         "FALSE_POSITIVE": 0
       },
       "errors": [
-        "Repository adem4321/wa_image is too large (24385 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository adem4321/wa_image is too large (24385 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository adem4321/wa_image is too large (24385 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository adem4321/wa_image is too large (24385 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository adem4321/wa_image is too large (24385 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
+        "Repository adem4321/wa_image is too large (24413 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository adem4321/wa_image is too large (24413 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository adem4321/wa_image is too large (24413 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository adem4321/wa_image is too large (24413 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository adem4321/wa_image is too large (24413 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
       ]
     },
     {
-      "repo": "drylikov/News_API",
-      "filesScanned": 30,
+      "repo": "angelscriptsxx/Grow-a-garden-2-dupe",
+      "filesScanned": 4,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 5054,
+      "scanMs": 2168,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -131,273 +450,37 @@
       "errors": []
     },
     {
-      "repo": "goldsmithvalentinav33/227376203683",
-      "filesScanned": 13,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 3637,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "Tusharlimbasiya-200-silveroak/health-wellness-daily",
-      "filesScanned": 1020,
-      "matches": 15,
+      "repo": "static-web-apps-testing-org/swa38780037de2b40dcbdaeaa08a2139fe0",
+      "filesScanned": 52,
+      "matches": 1500,
       "evaluated": 10,
-      "scanMs": 17983,
+      "scanMs": 5349,
+      "verdicts": {
+        "TRUE_POSITIVE": 8,
+        "NEEDS_HUMAN_REVIEW": 2,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "AltairaLabs/Omnia",
+      "filesScanned": 15428,
+      "matches": 2625,
+      "evaluated": 10,
+      "scanMs": 49644,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
         "FALSE_POSITIVE": 10
       },
       "errors": []
-    },
-    {
-      "repo": "didthislv/OopsCaps",
-      "filesScanned": 24,
-      "matches": 10,
-      "evaluated": 10,
-      "scanMs": 6854,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "sirilux191/Sirilux191",
-      "filesScanned": 15,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 5119,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "barcerossantiago-beep/Springfield-Heating-and-Air-Conditioning",
-      "filesScanned": 36,
-      "matches": 102,
-      "evaluated": 10,
-      "scanMs": 1436,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "jobghana/lvlmno",
-      "filesScanned": 5,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 2991,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "ddt3/upptime",
-      "filesScanned": 250,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 19417,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "elliottbal/vkjsox",
-      "filesScanned": 488,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 109159,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "elliottbal/vkjsox: repository has 34964 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026专项指南:1分快33期计划倍投方案.md: TypeError: fetch failed",
-        "Blob fetch error for 2026专项指南:4组万能100%准确.md: Error: GitHub API /repos/elliottbal/vkjsox/contents/2026专项指南:4组万能100%准确.md → HTTP 400",
-        "Blob fetch error for 2026专项指南:大发在线计划全天计划?.md: Error: GitHub API /repos/elliottbal/vkjsox/contents/2026专项指南:大发在线计划全天计划?.md → HTTP 404",
-        "elliottbal/vkjsox: repository has 34963 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026专项指南:4组万能100%准确.md: Error: GitHub API /repos/elliottbal/vkjsox/contents/2026专项指南:4组万能100%准确.md → HTTP 400",
-        "Blob fetch error for 2026专项指南:大发在线计划全天计划?.md: Error: GitHub API /repos/elliottbal/vkjsox/contents/2026专项指南:大发在线计划全天计划?.md → HTTP 404",
-        "elliottbal/vkjsox: repository has 34962 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026专项指南:1分快3大小单双玩法及计算方法.md: TypeError: fetch failed",
-        "Blob fetch error for 2026专项指南:4组万能100%准确.md: Error: GitHub API /repos/elliottbal/vkjsox/contents/2026专项指南:4组万能100%准确.md → HTTP 400",
-        "Blob fetch error for 2026专项指南:大发在线计划全天计划?.md: Error: GitHub API /repos/elliottbal/vkjsox/contents/2026专项指南:大发在线计划全天计划?.md → HTTP 404",
-        "elliottbal/vkjsox: repository has 34961 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026专项指南:4组万能100%准确.md: Error: GitHub API /repos/elliottbal/vkjsox/contents/2026专项指南:4组万能100%准确.md → HTTP 400",
-        "Blob fetch error for 2026专项指南:大发在线计划全天计划?.md: Error: GitHub API /repos/elliottbal/vkjsox/contents/2026专项指南:大发在线计划全天计划?.md → HTTP 404",
-        "elliottbal/vkjsox: repository has 34960 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026专项指南:4组万能100%准确.md: Error: GitHub API /repos/elliottbal/vkjsox/contents/2026专项指南:4组万能100%准确.md → HTTP 400",
-        "Blob fetch error for 2026专项指南:大发在线计划全天计划?.md: Error: GitHub API /repos/elliottbal/vkjsox/contents/2026专项指南:大发在线计划全天计划?.md → HTTP 404"
-      ]
-    },
-    {
-      "repo": "axel999jav/java-oop",
-      "filesScanned": 14,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 8930,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "cadejager/agent-box",
-      "filesScanned": 65,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 5210,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "bosticry90/ToE",
-      "filesScanned": 475,
-      "matches": 238,
-      "evaluated": 10,
-      "scanMs": 121950,
-      "verdicts": {
-        "TRUE_POSITIVE": 2,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 8
-      },
-      "errors": [
-        "bosticry90/ToE: repository has 8892 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "bosticry90/ToE: repository has 8888 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "bosticry90/ToE: repository has 8884 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "bosticry90/ToE: repository has 8880 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "bosticry90/ToE: repository has 8876 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
-      ]
-    },
-    {
-      "repo": "ellieusdav/pgvgjq",
-      "filesScanned": 2,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 5553,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "Commit dfb7add scan failed: TypeError: fetch failed"
-      ]
-    },
-    {
-      "repo": "MahmoudElHassan/Kher-Backend-and-SAS",
-      "filesScanned": 7159,
-      "matches": 263,
-      "evaluated": 10,
-      "scanMs": 88361,
-      "verdicts": {
-        "TRUE_POSITIVE": 6,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 4
-      },
-      "errors": [
-        "MahmoudElHassan/Kher-Backend-and-SAS: zipball stream error — TimeoutError: The operation was aborted due to timeout"
-      ]
-    },
-    {
-      "repo": "UnitVectorY-Labs/itemservicecentral",
-      "filesScanned": 305,
-      "matches": 75,
-      "evaluated": 10,
-      "scanMs": 6083,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "Elytrixx/Primer-repositorio",
-      "filesScanned": 8,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 3484,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "thissayantan/wallora",
-      "filesScanned": 500,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 46113,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "thissayantan/wallora: repository has 137 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "thissayantan/wallora: repository has 137 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "thissayantan/wallora: repository has 137 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "thissayantan/wallora: repository has 137 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "thissayantan/wallora: repository has 137 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
-      ]
-    },
-    {
-      "repo": "loydweiss/ohbame",
-      "filesScanned": 499,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 114827,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "loydweiss/ohbame: repository has 17737 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "loydweiss/ohbame: repository has 17736 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "loydweiss/ohbame: repository has 17735 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "loydweiss/ohbame: repository has 17734 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!168飞艇公式计算最佳方法.md: TypeError: fetch failed",
-        "loydweiss/ohbame: repository has 17733 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
-      ]
     },
     {
       "repo": "vSkeezy/test2",
       "filesScanned": 20,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 6906,
+      "scanMs": 5461,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -406,159 +489,11 @@
       "errors": []
     },
     {
-      "repo": "ImAbuSayed/las-llaves-de-tu-corazon",
-      "filesScanned": 67,
-      "matches": 60,
-      "evaluated": 10,
-      "scanMs": 9181,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "xiaoandy1974g/gdl",
-      "filesScanned": 0,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 739,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "Repository xiaoandy1974g/gdl is too large (5943 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
-      ]
-    },
-    {
-      "repo": "blackhole-networks/IP-List",
-      "filesScanned": 1725,
-      "matches": 10000,
-      "evaluated": 10,
-      "scanMs": 8849,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "MakarovDs777/Quantum-foam-generator-online-on-babylon.js",
-      "filesScanned": 55,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 94806,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "armtrain/ckcsby",
-      "filesScanned": 5,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 2106,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "miciid/uyfbju",
-      "filesScanned": 493,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 60212,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "miciid/uyfbju: repository has 18108 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!大发大小与双单计划软件?-.md: Error: GitHub API /repos/miciid/uyfbju/contents/2026今日第一财经!大发大小与双单计划软件?-.md → HTTP 404",
-        "miciid/uyfbju: repository has 18107 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!大发大小与双单计划软件?-.md: Error: GitHub API /repos/miciid/uyfbju/contents/2026今日第一财经!大发大小与双单计划软件?-.md → HTTP 404",
-        "miciid/uyfbju: repository has 18106 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!1分快31000本金倍投模式.md: TypeError: fetch failed",
-        "Blob fetch error for 2026今日第一财经!全民乐彩票welcome.md: TypeError: fetch failed",
-        "Blob fetch error for 2026今日第一财经!大发大小与双单计划软件?-.md: Error: GitHub API /repos/miciid/uyfbju/contents/2026今日第一财经!大发大小与双单计划软件?-.md → HTTP 404",
-        "miciid/uyfbju: repository has 18105 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!大发大小与双单计划软件?-.md: Error: GitHub API /repos/miciid/uyfbju/contents/2026今日第一财经!大发大小与双单计划软件?-.md → HTTP 404",
-        "miciid/uyfbju: repository has 18104 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!大发大小与双单计划软件?-.md: Error: GitHub API /repos/miciid/uyfbju/contents/2026今日第一财经!大发大小与双单计划软件?-.md → HTTP 404"
-      ]
-    },
-    {
-      "repo": "yash4991/Quick-Summary",
-      "filesScanned": 22,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4724,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "terrin-hunter/git_test",
-      "filesScanned": 16,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 63695,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "terrin-hunter/git_test: zipball stream error — TimeoutError: The operation was aborted due to timeout",
-        "terrin-hunter/git_test: zipball stream error — TimeoutError: The operation was aborted due to timeout"
-      ]
-    },
-    {
-      "repo": "msbecky5354/HK_PriceWatch-",
-      "filesScanned": 215,
-      "matches": 10,
-      "evaluated": 10,
-      "scanMs": 77576,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "JMartynov/github-secret-report",
-      "filesScanned": 142,
-      "matches": 103,
-      "evaluated": 10,
-      "scanMs": 4074,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "jpcalvert/companybay_weather",
+      "repo": "lmccamm-source/plan-your-vacation-deployment",
       "filesScanned": 20,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 4244,
+      "scanMs": 14131,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -567,30 +502,40 @@
       "errors": []
     },
     {
-      "repo": "vjmncfjbxbxbnc-cmd-hhnbxchfjnsczv/astro_user1",
-      "filesScanned": 0,
+      "repo": "pharo79/etqcuc",
+      "filesScanned": 490,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 1684,
+      "scanMs": 46366,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
         "FALSE_POSITIVE": 0
       },
       "errors": [
-        "Repository vjmncfjbxbxbnc-cmd-hhnbxchfjnsczv/astro_user1 is too large (20854 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository vjmncfjbxbxbnc-cmd-hhnbxchfjnsczv/astro_user1 is too large (20854 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository vjmncfjbxbxbnc-cmd-hhnbxchfjnsczv/astro_user1 is too large (20854 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository vjmncfjbxbxbnc-cmd-hhnbxchfjnsczv/astro_user1 is too large (20854 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository vjmncfjbxbxbnc-cmd-hhnbxchfjnsczv/astro_user1 is too large (20854 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
+        "pharo79/etqcuc: repository has 35440 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/pharo79/etqcuc/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:大发大小与双单计划软件?-.md: Error: GitHub API /repos/pharo79/etqcuc/contents/2026专项指南:大发大小与双单计划软件?-.md → HTTP 404",
+        "pharo79/etqcuc: repository has 35439 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/pharo79/etqcuc/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:大发大小与双单计划软件?-.md: Error: GitHub API /repos/pharo79/etqcuc/contents/2026专项指南:大发大小与双单计划软件?-.md → HTTP 404",
+        "pharo79/etqcuc: repository has 35438 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/pharo79/etqcuc/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:大发大小与双单计划软件?-.md: Error: GitHub API /repos/pharo79/etqcuc/contents/2026专项指南:大发大小与双单计划软件?-.md → HTTP 404",
+        "pharo79/etqcuc: repository has 35437 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/pharo79/etqcuc/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:大发大小与双单计划软件?-.md: Error: GitHub API /repos/pharo79/etqcuc/contents/2026专项指南:大发大小与双单计划软件?-.md → HTTP 404",
+        "pharo79/etqcuc: repository has 35436 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专项指南:単双稳贏的100%方法.md: Error: GitHub API /repos/pharo79/etqcuc/contents/2026专项指南:単双稳贏的100%方法.md → HTTP 400",
+        "Blob fetch error for 2026专项指南:大发大小与双单计划软件?-.md: Error: GitHub API /repos/pharo79/etqcuc/contents/2026专项指南:大发大小与双单计划软件?-.md → HTTP 404"
       ]
     },
     {
-      "repo": "protocolfaro/faro-paneles",
-      "filesScanned": 70,
+      "repo": "LavenderFong/LavenderFong.github.io",
+      "filesScanned": 73,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 5232,
+      "scanMs": 5306,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -599,37 +544,11 @@
       "errors": []
     },
     {
-      "repo": "jude2024/mnjava",
-      "filesScanned": 6,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 2597,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "silla1076456/clao-9",
-      "filesScanned": 20,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4054,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "TuanVuuuu/vn-sport-news-data",
-      "filesScanned": 960,
-      "matches": 8070,
+      "repo": "Marwichmisi/maya",
+      "filesScanned": 2148,
+      "matches": 140,
       "evaluated": 10,
-      "scanMs": 12036,
+      "scanMs": 8387,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -638,37 +557,24 @@
       "errors": []
     },
     {
-      "repo": "mariafornea/FreeCodeCamp_HTML",
-      "filesScanned": 70,
-      "matches": 5,
-      "evaluated": 5,
-      "scanMs": 4525,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 5
-      },
-      "errors": []
-    },
-    {
-      "repo": "theinkbit/theinkbit",
-      "filesScanned": 15,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4671,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "Mahmoudarafa0/ofoq-academy",
-      "filesScanned": 1175,
-      "matches": 1020,
+      "repo": "X3264L/ricks-basement",
+      "filesScanned": 103,
+      "matches": 109,
       "evaluated": 10,
-      "scanMs": 10953,
+      "scanMs": 1803,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "hemna/haminfo",
+      "filesScanned": 2680,
+      "matches": 310,
+      "evaluated": 10,
+      "scanMs": 12930,
       "verdicts": {
         "TRUE_POSITIVE": 3,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -677,24 +583,472 @@
       "errors": []
     },
     {
-      "repo": "Pavithra-Senthilkumar445/hr-attrition-intelligence",
-      "filesScanned": 28,
-      "matches": 1,
-      "evaluated": 1,
-      "scanMs": 5255,
+      "repo": "uguralpcicek/vibe-coded-xr-biology-lab",
+      "filesScanned": 35,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 5478,
       "verdicts": {
         "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "caluuum18-jpg/dashboard",
+      "filesScanned": 30,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 4796,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "danrac/AetherFlow_CEP",
+      "filesScanned": 375,
+      "matches": 30,
+      "evaluated": 10,
+      "scanMs": 6545,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "olegabora/ngnuck",
+      "filesScanned": 3000,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 11083,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "elist608/agogtl",
+      "filesScanned": 3000,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 10992,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "alexpanayiotou2-droid/TSAB-Analytics",
+      "filesScanned": 10,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 2417,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "akio-cys/hanin",
+      "filesScanned": 6,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 2683,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "AIAgentV10/ai-agent-v10-public",
+      "filesScanned": 35,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 7517,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "justthetipafl-ship-it/JustTheTip",
+      "filesScanned": 1002,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 17485,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "valeriokar/yywfrg",
+      "filesScanned": 485,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 44490,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "valeriokar/yywfrg: repository has 26631 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专业解读：100%精准预测号码5注.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：100%精准预测号码5注.md → HTTP 400",
+        "Blob fetch error for 2026专业解读：3d精准100%稳赢计划.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：3d精准100%稳赢计划.md → HTTP 400",
+        "Blob fetch error for 2026专业解读：彩票导师团队怎么加入?.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：彩票导师团队怎么加入?.md → HTTP 404",
+        "valeriokar/yywfrg: repository has 26630 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专业解读：100%精准预测号码5注.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：100%精准预测号码5注.md → HTTP 400",
+        "Blob fetch error for 2026专业解读：3d精准100%稳赢计划.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：3d精准100%稳赢计划.md → HTTP 400",
+        "Blob fetch error for 2026专业解读：彩票导师团队怎么加入?.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：彩票导师团队怎么加入?.md → HTTP 404",
+        "valeriokar/yywfrg: repository has 26629 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专业解读：100%精准预测号码5注.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：100%精准预测号码5注.md → HTTP 400",
+        "Blob fetch error for 2026专业解读：3d精准100%稳赢计划.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：3d精准100%稳赢计划.md → HTTP 400",
+        "Blob fetch error for 2026专业解读：彩票导师团队怎么加入?.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：彩票导师团队怎么加入?.md → HTTP 404",
+        "valeriokar/yywfrg: repository has 26628 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专业解读：100%精准预测号码5注.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：100%精准预测号码5注.md → HTTP 400",
+        "Blob fetch error for 2026专业解读：3d精准100%稳赢计划.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：3d精准100%稳赢计划.md → HTTP 400",
+        "Blob fetch error for 2026专业解读：彩票导师团队怎么加入?.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：彩票导师团队怎么加入?.md → HTTP 404",
+        "valeriokar/yywfrg: repository has 26627 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "Blob fetch error for 2026专业解读：100%精准预测号码5注.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：100%精准预测号码5注.md → HTTP 400",
+        "Blob fetch error for 2026专业解读：3d精准100%稳赢计划.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：3d精准100%稳赢计划.md → HTTP 400",
+        "Blob fetch error for 2026专业解读：彩票导师团队怎么加入?.md: Error: GitHub API /repos/valeriokar/yywfrg/contents/2026专业解读：彩票导师团队怎么加入?.md → HTTP 404"
+      ]
+    },
+    {
+      "repo": "onlinecrash24/fail2banlist",
+      "filesScanned": 15,
+      "matches": 200,
+      "evaluated": 10,
+      "scanMs": 5391,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "juliosilva10/excalibur5",
+      "filesScanned": 2723,
+      "matches": 525,
+      "evaluated": 10,
+      "scanMs": 10544,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "zach299/DTCGROWTHBENCHMARK",
+      "filesScanned": 465,
+      "matches": 505,
+      "evaluated": 10,
+      "scanMs": 6728,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "Unpiloted0852/AvWx-Web",
+      "filesScanned": 25,
+      "matches": 4,
+      "evaluated": 4,
+      "scanMs": 9937,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 4
+      },
+      "errors": []
+    },
+    {
+      "repo": "contacto404/notaclinica",
+      "filesScanned": 1430,
+      "matches": 515,
+      "evaluated": 10,
+      "scanMs": 7517,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "hostile-shorepatrol81/polanyi-stack",
+      "filesScanned": 230,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 6042,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "alifa024587/trustpositifmini",
+      "filesScanned": 55,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 4952,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "syano0007/syano07007",
+      "filesScanned": 4990,
+      "matches": 1645,
+      "evaluated": 10,
+      "scanMs": 52938,
+      "verdicts": {
+        "TRUE_POSITIVE": 2,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 8
+      },
+      "errors": []
+    },
+    {
+      "repo": "stanleykev7-rgb/home-Power",
+      "filesScanned": 45,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 6460,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "wenzhannguyen-dot/gia-su-hoa-ngu-tan-an",
+      "filesScanned": 495,
+      "matches": 4,
+      "evaluated": 4,
+      "scanMs": 58664,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 4
+      },
+      "errors": [
+        "wenzhannguyen-dot/gia-su-hoa-ngu-tan-an: repository has 246 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "wenzhannguyen-dot/gia-su-hoa-ngu-tan-an: repository has 246 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "wenzhannguyen-dot/gia-su-hoa-ngu-tan-an: repository has 246 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "wenzhannguyen-dot/gia-su-hoa-ngu-tan-an: repository has 246 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "wenzhannguyen-dot/gia-su-hoa-ngu-tan-an: repository has 246 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
+      ]
+    },
+    {
+      "repo": "odoolargotek/worldcup2026",
+      "filesScanned": 292,
+      "matches": 2542,
+      "evaluated": 10,
+      "scanMs": 15784,
+      "verdicts": {
+        "TRUE_POSITIVE": 7,
+        "NEEDS_HUMAN_REVIEW": 3,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "ecacertified-jpg/pixl-parade-page",
+      "filesScanned": 9015,
+      "matches": 1155,
+      "evaluated": 10,
+      "scanMs": 26513,
+      "verdicts": {
+        "TRUE_POSITIVE": 9,
         "NEEDS_HUMAN_REVIEW": 0,
         "FALSE_POSITIVE": 1
       },
       "errors": []
     },
     {
-      "repo": "Mebistium/mebistium.github.io",
-      "filesScanned": 40,
-      "matches": 90,
+      "repo": "GLaDiA7or-vORT3X90/Contract-Bot-Ethereum",
+      "filesScanned": 20,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 5655,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "kathrinechurrigueresque832/nebula-kb",
+      "filesScanned": 10,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 4036,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "GIPtS/markray",
+      "filesScanned": 496,
+      "matches": 495,
       "evaluated": 10,
-      "scanMs": 15245,
+      "scanMs": 5818,
+      "verdicts": {
+        "TRUE_POSITIVE": 1,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 9
+      },
+      "errors": []
+    },
+    {
+      "repo": "techshare101/metalmindtech-agency-front",
+      "filesScanned": 580,
+      "matches": 25,
+      "evaluated": 10,
+      "scanMs": 6196,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "2023JoshuaP/Thesis-Proyect",
+      "filesScanned": 98,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 5724,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "desiredate/vckfat",
+      "filesScanned": 500,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 49025,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "desiredate/vckfat: repository has 10896 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "desiredate/vckfat: repository has 10895 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "desiredate/vckfat: repository has 10894 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "desiredate/vckfat: repository has 10893 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "desiredate/vckfat: repository has 10892 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
+      ]
+    },
+    {
+      "repo": "EXDEICIDA/retina-ml",
+      "filesScanned": 24,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 6544,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "lubaggink/yrawok",
+      "filesScanned": 500,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 49382,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "lubaggink/yrawok: repository has 10968 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "lubaggink/yrawok: repository has 10967 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "lubaggink/yrawok: repository has 10966 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "lubaggink/yrawok: repository has 10965 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "lubaggink/yrawok: repository has 10964 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
+      ]
+    },
+    {
+      "repo": "aboutcode-data/purls-nuget-0960",
+      "filesScanned": 148622,
+      "matches": 10000,
+      "evaluated": 10,
+      "scanMs": 195949,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": [
+        "aboutcode-data/purls-nuget-0960: zipball stream error — TimeoutError: The operation was aborted due to timeout",
+        "aboutcode-data/purls-nuget-0960: zipball stream error — TimeoutError: The operation was aborted due to timeout",
+        "aboutcode-data/purls-nuget-0960: zipball stream error — TimeoutError: The operation was aborted due to timeout",
+        "aboutcode-data/purls-nuget-0960: zipball stream error — TimeoutError: The operation was aborted due to timeout",
+        "aboutcode-data/purls-nuget-0960: zipball stream error — TimeoutError: The operation was aborted due to timeout"
+      ]
+    },
+    {
+      "repo": "jorgerpg09/polysniper-site",
+      "filesScanned": 60,
+      "matches": 5,
+      "evaluated": 5,
+      "scanMs": 7572,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 5
+      },
+      "errors": []
+    },
+    {
+      "repo": "Luthons/AmonOT---Tracker",
+      "filesScanned": 145,
+      "matches": 15,
+      "evaluated": 10,
+      "scanMs": 15146,
       "verdicts": {
         "TRUE_POSITIVE": 8,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -703,76 +1057,11 @@
       "errors": []
     },
     {
-      "repo": "devrjs/oiko",
-      "filesScanned": 1181,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 6530,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "hugohow/studio",
-      "filesScanned": 180,
-      "matches": 465,
-      "evaluated": 10,
-      "scanMs": 5252,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "toshimatagi/ec-monitor-feed",
-      "filesScanned": 10,
-      "matches": 10,
-      "evaluated": 10,
-      "scanMs": 4839,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "lukeypue/CryptoCommander",
-      "filesScanned": 19,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4217,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "smt197/fitness-221",
-      "filesScanned": 380,
-      "matches": 520,
-      "evaluated": 10,
-      "scanMs": 7188,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 1,
-        "FALSE_POSITIVE": 9
-      },
-      "errors": []
-    },
-    {
-      "repo": "dcs-masterclass-ia/stla-monitor",
-      "filesScanned": 25,
+      "repo": "ropkiplagat/fxpulse",
+      "filesScanned": 485,
       "matches": 35,
       "evaluated": 10,
-      "scanMs": 6044,
+      "scanMs": 6379,
       "verdicts": {
         "TRUE_POSITIVE": 4,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -781,11 +1070,184 @@
       "errors": []
     },
     {
-      "repo": "tfexff/tfex-data",
+      "repo": "BoatraceCSV/boatracecsv.github.io",
+      "filesScanned": 500,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 52358,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "BoatraceCSV/boatracecsv.github.io: repository has 3662 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "BoatraceCSV/boatracecsv.github.io: repository has 3662 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "BoatraceCSV/boatracecsv.github.io: repository has 3662 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "BoatraceCSV/boatracecsv.github.io: repository has 3662 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "BoatraceCSV/boatracecsv.github.io: repository has 3662 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
+      ]
+    },
+    {
+      "repo": "AmetuerCodr/movie-cli",
+      "filesScanned": 195,
+      "matches": 45,
+      "evaluated": 10,
+      "scanMs": 4659,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "Amy7007/VPN-Detector",
+      "filesScanned": 800,
+      "matches": 40,
+      "evaluated": 10,
+      "scanMs": 6745,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "marcgoebel/Finanzanalyse-projekt",
+      "filesScanned": 0,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 2039,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "Repository marcgoebel/Finanzanalyse-projekt is too large (5433 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository marcgoebel/Finanzanalyse-projekt is too large (5433 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository marcgoebel/Finanzanalyse-projekt is too large (5433 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository marcgoebel/Finanzanalyse-projekt is too large (5433 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository marcgoebel/Finanzanalyse-projekt is too large (5433 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
+      ]
+    },
+    {
+      "repo": "mrlabmate/git-account-manager",
+      "filesScanned": 225,
+      "matches": 500,
+      "evaluated": 10,
+      "scanMs": 7655,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 10
+      },
+      "errors": []
+    },
+    {
+      "repo": "isaacsaltiel/puntazo_web_v2",
+      "filesScanned": 500,
+      "matches": 90,
+      "evaluated": 10,
+      "scanMs": 37701,
+      "verdicts": {
+        "TRUE_POSITIVE": 5,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 5
+      },
+      "errors": [
+        "isaacsaltiel/puntazo_web_v2: repository has 293 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "isaacsaltiel/puntazo_web_v2: repository has 293 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "isaacsaltiel/puntazo_web_v2: repository has 293 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "isaacsaltiel/puntazo_web_v2: repository has 293 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "isaacsaltiel/puntazo_web_v2: repository has 293 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
+      ]
+    },
+    {
+      "repo": "alanremery/vidadt",
+      "filesScanned": 500,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 40720,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "alanremery/vidadt: repository has 31404 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "alanremery/vidadt: repository has 31403 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "alanremery/vidadt: repository has 31402 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "alanremery/vidadt: repository has 31401 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "alanremery/vidadt: repository has 31400 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
+      ]
+    },
+    {
+      "repo": "Raph33AI/alphavault-quant",
+      "filesScanned": 0,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 1766,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": [
+        "Repository Raph33AI/alphavault-quant is too large (633 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository Raph33AI/alphavault-quant is too large (633 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository Raph33AI/alphavault-quant is too large (633 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository Raph33AI/alphavault-quant is too large (633 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
+        "Repository Raph33AI/alphavault-quant is too large (633 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
+      ]
+    },
+    {
+      "repo": "game-review-vf20/.github",
+      "filesScanned": 8,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 2809,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "kjwitt/kjwitt.github.io",
+      "filesScanned": 207,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 9477,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "rehaan-ahmad/rehaan-ahmad",
+      "filesScanned": 10,
+      "matches": 0,
+      "evaluated": 0,
+      "scanMs": 4072,
+      "verdicts": {
+        "TRUE_POSITIVE": 0,
+        "NEEDS_HUMAN_REVIEW": 0,
+        "FALSE_POSITIVE": 0
+      },
+      "errors": []
+    },
+    {
+      "repo": "fpupeschi/lg-pages",
       "filesScanned": 20,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 16500,
+      "scanMs": 4414,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -794,200 +1256,11 @@
       "errors": []
     },
     {
-      "repo": "21li-rcp/stga-mobil",
-      "filesScanned": 15,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4320,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "techteachingai-a11y/TechTeaching",
-      "filesScanned": 25,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4015,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "marslan-786/Silent-NodeJS",
-      "filesScanned": 30,
-      "matches": 5,
-      "evaluated": 5,
-      "scanMs": 4202,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 5
-      },
-      "errors": []
-    },
-    {
-      "repo": "B7IMRJE/BarbarosaV2",
-      "filesScanned": 893,
-      "matches": 505,
-      "evaluated": 10,
-      "scanMs": 7625,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "pearsonlucianojaq593-crypto/jfrloc",
-      "filesScanned": 500,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 54624,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "pearsonlucianojaq593-crypto/jfrloc: repository has 36599 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "pearsonlucianojaq593-crypto/jfrloc: repository has 36598 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "pearsonlucianojaq593-crypto/jfrloc: repository has 36597 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "pearsonlucianojaq593-crypto/jfrloc: repository has 36596 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "pearsonlucianojaq593-crypto/jfrloc: repository has 36595 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
-      ]
-    },
-    {
-      "repo": "theshayanrezvani-beep/MediaZard",
-      "filesScanned": 25,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4431,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "runsdihgvcg/NSGFQE",
-      "filesScanned": 30,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4266,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "broskicommunity/BroskiWebSite",
-      "filesScanned": 535,
-      "matches": 510,
-      "evaluated": 10,
-      "scanMs": 35695,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "alonrehvam-png/hourly-flotila-screenshot",
-      "filesScanned": 10,
-      "matches": 1,
-      "evaluated": 1,
-      "scanMs": 5114,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 1
-      },
-      "errors": []
-    },
-    {
-      "repo": "Eraldiboss007/Proxifier-5.2-Unofficial-Patch",
-      "filesScanned": 15,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4908,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "aljymarano/hydihy",
-      "filesScanned": 490,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 66959,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "aljymarano/hydihy: repository has 34833 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026专项指南:倍投止损100%最聪明的方案.md: Error: GitHub API /repos/aljymarano/hydihy/contents/2026专项指南:倍投止损100%最聪明的方案.md → HTTP 400",
-        "Blob fetch error for 2026专项指南:大发人工计划打法?.md: Error: GitHub API /repos/aljymarano/hydihy/contents/2026专项指南:大发人工计划打法?.md → HTTP 404",
-        "aljymarano/hydihy: repository has 34832 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026专项指南:倍投止损100%最聪明的方案.md: Error: GitHub API /repos/aljymarano/hydihy/contents/2026专项指南:倍投止损100%最聪明的方案.md → HTTP 400",
-        "Blob fetch error for 2026专项指南:大发人工计划打法?.md: Error: GitHub API /repos/aljymarano/hydihy/contents/2026专项指南:大发人工计划打法?.md → HTTP 404",
-        "aljymarano/hydihy: repository has 34831 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026专项指南:倍投止损100%最聪明的方案.md: Error: GitHub API /repos/aljymarano/hydihy/contents/2026专项指南:倍投止损100%最聪明的方案.md → HTTP 400",
-        "Blob fetch error for 2026专项指南:大发人工计划打法?.md: Error: GitHub API /repos/aljymarano/hydihy/contents/2026专项指南:大发人工计划打法?.md → HTTP 404",
-        "aljymarano/hydihy: repository has 34830 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026专项指南:倍投止损100%最聪明的方案.md: Error: GitHub API /repos/aljymarano/hydihy/contents/2026专项指南:倍投止损100%最聪明的方案.md → HTTP 400",
-        "Blob fetch error for 2026专项指南:大发人工计划打法?.md: Error: GitHub API /repos/aljymarano/hydihy/contents/2026专项指南:大发人工计划打法?.md → HTTP 404",
-        "aljymarano/hydihy: repository has 34829 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026专项指南:倍投止损100%最聪明的方案.md: Error: GitHub API /repos/aljymarano/hydihy/contents/2026专项指南:倍投止损100%最聪明的方案.md → HTTP 400",
-        "Blob fetch error for 2026专项指南:大发人工计划打法?.md: Error: GitHub API /repos/aljymarano/hydihy/contents/2026专项指南:大发人工计划打法?.md → HTTP 404"
-      ]
-    },
-    {
-      "repo": "sinhs12/nziasy",
-      "filesScanned": 495,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 51634,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "sinhs12/nziasy: repository has 18166 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!4组万能100%准确.md: Error: GitHub API /repos/sinhs12/nziasy/contents/2026今日第一财经!4组万能100%准确.md → HTTP 400",
-        "sinhs12/nziasy: repository has 18165 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!4组万能100%准确.md: Error: GitHub API /repos/sinhs12/nziasy/contents/2026今日第一财经!4组万能100%准确.md → HTTP 400",
-        "sinhs12/nziasy: repository has 18164 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!4组万能100%准确.md: Error: GitHub API /repos/sinhs12/nziasy/contents/2026今日第一财经!4组万能100%准确.md → HTTP 400",
-        "sinhs12/nziasy: repository has 18163 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!4组万能100%准确.md: Error: GitHub API /repos/sinhs12/nziasy/contents/2026今日第一财经!4组万能100%准确.md → HTTP 400",
-        "sinhs12/nziasy: repository has 18162 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!4组万能100%准确.md: Error: GitHub API /repos/sinhs12/nziasy/contents/2026今日第一财经!4组万能100%准确.md → HTTP 400"
-      ]
-    },
-    {
-      "repo": "josephmusiiwa06-eng/gunda-dashboard01",
-      "filesScanned": 120,
+      "repo": "AnnaBizStrategist/nugget-bizdev-tool",
+      "filesScanned": 90,
       "matches": 500,
       "evaluated": 10,
-      "scanMs": 5038,
+      "scanMs": 6286,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
@@ -996,476 +1269,42 @@
       "errors": []
     },
     {
-      "repo": "AnnieAuriema/diario-dos-meus-dogs",
-      "filesScanned": 33,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 12453,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "Yanek2/solar-control",
-      "filesScanned": 140,
-      "matches": 45,
-      "evaluated": 10,
-      "scanMs": 4788,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "seijsing/vm-tip",
-      "filesScanned": 80,
-      "matches": 5,
-      "evaluated": 5,
-      "scanMs": 4632,
-      "verdicts": {
-        "TRUE_POSITIVE": 3,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 2
-      },
-      "errors": []
-    },
-    {
-      "repo": "indmdev/Telegram-Premium-Reseller-Bot",
-      "filesScanned": 15,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4334,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "CelinaRodgriues/spice-studio-magic",
-      "filesScanned": 490,
-      "matches": 5,
-      "evaluated": 5,
-      "scanMs": 19029,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 5
-      },
-      "errors": []
-    },
-    {
-      "repo": "alamgbs/personal-web",
-      "filesScanned": 508,
-      "matches": 503,
-      "evaluated": 10,
-      "scanMs": 6616,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "AngheloBR/hp-dotfiles",
-      "filesScanned": 86,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 3111,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "Simcointel/Data",
+      "repo": "bulletsday/cwdxza",
       "filesScanned": 500,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 45202,
+      "scanMs": 43809,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
         "FALSE_POSITIVE": 0
       },
       "errors": [
-        "Simcointel/Data: repository has 18013 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Simcointel/Data: repository has 18013 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Simcointel/Data: repository has 18013 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Simcointel/Data: repository has 18010 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Simcointel/Data: repository has 18007 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
+        "bulletsday/cwdxza: repository has 28283 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "bulletsday/cwdxza: repository has 28282 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "bulletsday/cwdxza: repository has 28281 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "bulletsday/cwdxza: repository has 28280 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "bulletsday/cwdxza: repository has 28279 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
       ]
     },
     {
-      "repo": "camp4korea/ocxzew",
+      "repo": "willdeeon/csofng",
       "filesScanned": 500,
       "matches": 0,
       "evaluated": 0,
-      "scanMs": 100766,
+      "scanMs": 46772,
       "verdicts": {
         "TRUE_POSITIVE": 0,
         "NEEDS_HUMAN_REVIEW": 0,
         "FALSE_POSITIVE": 0
       },
       "errors": [
-        "camp4korea/ocxzew: repository has 35183 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "camp4korea/ocxzew: repository has 35182 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "camp4korea/ocxzew: repository has 35181 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "camp4korea/ocxzew: repository has 35180 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "camp4korea/ocxzew: repository has 35179 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
+        "willdeeon/csofng: repository has 35844 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "willdeeon/csofng: repository has 35843 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "willdeeon/csofng: repository has 35842 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "willdeeon/csofng: repository has 35841 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
+        "willdeeon/csofng: repository has 35840 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
       ]
-    },
-    {
-      "repo": "OliveProjects/marketmoood-americas-indexes",
-      "filesScanned": 40,
-      "matches": 10,
-      "evaluated": 10,
-      "scanMs": 5405,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "Robotohero/Eporty",
-      "filesScanned": 79,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4724,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "usamadigital0-ship-it/Usama-Digital-",
-      "filesScanned": 5,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 5528,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "kls2177/ISSSTWorkshop2026",
-      "filesScanned": 40,
-      "matches": 4,
-      "evaluated": 4,
-      "scanMs": 8539,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 4
-      },
-      "errors": []
-    },
-    {
-      "repo": "installcatalog/SaatPake",
-      "filesScanned": 60,
-      "matches": 9,
-      "evaluated": 9,
-      "scanMs": 5191,
-      "verdicts": {
-        "TRUE_POSITIVE": 1,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 8
-      },
-      "errors": []
-    },
-    {
-      "repo": "sspidert/tsqcaf",
-      "filesScanned": 495,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 53488,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "sspidert/tsqcaf: repository has 13046 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!大发彩票导师?Q Q.md: Error: GitHub API /repos/sspidert/tsqcaf/contents/2026今日第一财经!大发彩票导师?Q Q.md → HTTP 404",
-        "sspidert/tsqcaf: repository has 13045 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!大发彩票导师?Q Q.md: Error: GitHub API /repos/sspidert/tsqcaf/contents/2026今日第一财经!大发彩票导师?Q Q.md → HTTP 404",
-        "sspidert/tsqcaf: repository has 13044 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!大发彩票导师?Q Q.md: Error: GitHub API /repos/sspidert/tsqcaf/contents/2026今日第一财经!大发彩票导师?Q Q.md → HTTP 404",
-        "sspidert/tsqcaf: repository has 13043 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!大发彩票导师?Q Q.md: Error: GitHub API /repos/sspidert/tsqcaf/contents/2026今日第一财经!大发彩票导师?Q Q.md → HTTP 404",
-        "sspidert/tsqcaf: repository has 13042 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "Blob fetch error for 2026今日第一财经!大发彩票导师?Q Q.md: Error: GitHub API /repos/sspidert/tsqcaf/contents/2026今日第一财经!大发彩票导师?Q Q.md → HTTP 404"
-      ]
-    },
-    {
-      "repo": "rust-lang/crates.io-index",
-      "filesScanned": 0,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 2264,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "Repository rust-lang/crates.io-index is too large (625 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository rust-lang/crates.io-index is too large (625 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository rust-lang/crates.io-index is too large (625 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository rust-lang/crates.io-index is too large (625 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository rust-lang/crates.io-index is too large (625 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
-      ]
-    },
-    {
-      "repo": "willisfeng/douyin",
-      "filesScanned": 150,
-      "matches": 570,
-      "evaluated": 10,
-      "scanMs": 6181,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "jackieju/AIAgentLocalMemory",
-      "filesScanned": 365,
-      "matches": 35,
-      "evaluated": 10,
-      "scanMs": 5318,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "bogdanid87-hub/qa-mcp-automation",
-      "filesScanned": 1141,
-      "matches": 525,
-      "evaluated": 10,
-      "scanMs": 9307,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "cherinelim597-web/bowlbowljuu",
-      "filesScanned": 160,
-      "matches": 15,
-      "evaluated": 10,
-      "scanMs": 8316,
-      "verdicts": {
-        "TRUE_POSITIVE": 3,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 7
-      },
-      "errors": []
-    },
-    {
-      "repo": "wilson37wu/AI_Actuarial_2026_ver_Codex",
-      "filesScanned": 7540,
-      "matches": 4008,
-      "evaluated": 10,
-      "scanMs": 28139,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "xdg-repano/twvbyb",
-      "filesScanned": 500,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 63226,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "xdg-repano/twvbyb: repository has 34931 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "xdg-repano/twvbyb: repository has 34930 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "xdg-repano/twvbyb: repository has 34929 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "xdg-repano/twvbyb: repository has 34928 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion.",
-        "xdg-repano/twvbyb: repository has 34927 files. Git Trees scanning is capped at first 100 files to prevent rate-limit exhaustion."
-      ]
-    },
-    {
-      "repo": "pepijn2/test",
-      "filesScanned": 10,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4246,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "ybw070601/ybw",
-      "filesScanned": 100,
-      "matches": 30,
-      "evaluated": 10,
-      "scanMs": 5163,
-      "verdicts": {
-        "TRUE_POSITIVE": 2,
-        "NEEDS_HUMAN_REVIEW": 4,
-        "FALSE_POSITIVE": 4
-      },
-      "errors": []
-    },
-    {
-      "repo": "aiexercise/learning-url-dashboard-pages",
-      "filesScanned": 60,
-      "matches": 170,
-      "evaluated": 10,
-      "scanMs": 4702,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 10
-      },
-      "errors": []
-    },
-    {
-      "repo": "V2RAYCONFIGSPOOL/V2RAY_SUB",
-      "filesScanned": 54,
-      "matches": 212,
-      "evaluated": 10,
-      "scanMs": 8733,
-      "verdicts": {
-        "TRUE_POSITIVE": 7,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 3
-      },
-      "errors": [
-        "Blob fetch error for v2ray_configs_no10.txt: TypeError: fetch failed"
-      ]
-    },
-    {
-      "repo": "gabrielmahia/county-mcp",
-      "filesScanned": 40,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4944,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "dfsstartinglineups/mlbstartingnine",
-      "filesScanned": 0,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 1857,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": [
-        "Repository dfsstartinglineups/mlbstartingnine is too large (1223 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository dfsstartinglineups/mlbstartingnine is too large (1223 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository dfsstartinglineups/mlbstartingnine is too large (1223 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository dfsstartinglineups/mlbstartingnine is too large (1223 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion",
-        "Repository dfsstartinglineups/mlbstartingnine is too large (1223 MB, limit: 488.28125 MB) — scan skipped to prevent API quota exhaustion"
-      ]
-    },
-    {
-      "repo": "iansuguimati/painel-oraculo",
-      "filesScanned": 35,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4936,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "winnietrisnodu/special-potato",
-      "filesScanned": 15,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 4051,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "judahlinuxmint223-ops/judah-s-games",
-      "filesScanned": 80,
-      "matches": 0,
-      "evaluated": 0,
-      "scanMs": 5586,
-      "verdicts": {
-        "TRUE_POSITIVE": 0,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 0
-      },
-      "errors": []
-    },
-    {
-      "repo": "ondrex-ember/gejza-news",
-      "filesScanned": 50,
-      "matches": 6,
-      "evaluated": 6,
-      "scanMs": 10878,
-      "verdicts": {
-        "TRUE_POSITIVE": 2,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 4
-      },
-      "errors": []
-    },
-    {
-      "repo": "dejongwout/adu-planner",
-      "filesScanned": 30,
-      "matches": 20,
-      "evaluated": 10,
-      "scanMs": 5607,
-      "verdicts": {
-        "TRUE_POSITIVE": 8,
-        "NEEDS_HUMAN_REVIEW": 0,
-        "FALSE_POSITIVE": 2
-      },
-      "errors": []
     }
   ]
 }

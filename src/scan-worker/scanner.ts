@@ -8,7 +8,7 @@
 
 import { Unzip, UnzipInflate } from 'fflate';
 import { scanSource, shouldSkipPath } from '../lib/scanner.js';
-import type { Match, Template } from '../lib/types.js';
+import type { Match, Template, ScanError } from '../lib/types.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -19,7 +19,10 @@ const MAX_MATCHES_PER_SCAN = 2_000;
 const MAX_FILE_BYTES       = 10 * 1024 * 1024;  // 10 MB per file
 const LARGE_REPO_KB        = 50_000;             // 50 MB in KB (GitHub repo.size unit)
 const MAX_REPO_SIZE_KB     = 500_000;            // 500 MB in KB (skip scans above this)
-const TREE_BATCH_SIZE      = 5;                  // concurrent blob fetches
+// TREE_BATCH_SIZE: Balance between parallelism and rate-limit consumption.
+// 5 concurrent requests × 20 batches = 100 API calls (leaves ~4900 quota).
+// Lower = slower scans but safer rate-limit margin.
+const TREE_BATCH_SIZE      = 5;
 
 // Per-request timeout, ported from secretscout-core's GitHubFetcher
 // (Client::builder().timeout(Duration::from_secs(30))). Without this, a
@@ -68,7 +71,7 @@ export interface ZipballScanResult {
   matches:       Match[];
   filesScanned:  number;
   bytesRead:     number;
-  errors:        string[];
+  errors:        ScanError[];
   rateLimit:     RateLimitInfo;   // from the primary GitHub request
 }
 
@@ -107,7 +110,7 @@ async function scanViaZipball(
   ref: string = 'HEAD',
 ): Promise<ZipballScanResult> {
   const allMatches: Match[] = [];
-  const errors: string[] = [];
+  const errors: ScanError[] = [];
   let filesScanned = 0;
   let bytesRead    = 0;
 
@@ -133,7 +136,7 @@ async function scanViaZipball(
       matches:      [],
       filesScanned: 0,
       bytesRead:    0,
-      errors:       [`HTTP ${res.status} fetching zipball for ${owner}/${repo}`],
+      errors:       [{ code: 'NETWORK_ERROR', message: `HTTP ${res.status} fetching zipball for ${owner}/${repo}`, context: { status: res.status } }],
       rateLimit,
     };
   }
@@ -155,7 +158,7 @@ async function scanViaZipball(
 
       file.ondata = (_err, chunk, final) => {
         if (_err) {
-          errors.push(`Decompress error in ${filePath}: ${_err}`);
+          errors.push({ code: 'DECOMPRESS_ERROR', message: `Decompress error in ${filePath}`, context: { error: String(_err) } });
           return;
         }
 
@@ -182,7 +185,7 @@ async function scanViaZipball(
             }
             filesScanned++;
           } catch (e) {
-            errors.push(`Scan error in ${filePath}: ${e}`);
+            errors.push({ code: 'SCAN_ERROR', message: `Scan error in ${filePath}`, context: { error: String(e) } });
           }
         }
       };
@@ -219,7 +222,7 @@ async function scanViaZipball(
           return;
         }
         if (bytesRead > MAX_ZIPBALL_SIZE) {
-          errors.push(`${owner}/${repo}: zipball exceeded 150 MB — scan truncated`);
+          errors.push({ code: 'FILE_TOO_LARGE', message: `${owner}/${repo}: zipball exceeded 150 MB — scan truncated` });
           reader.cancel().catch(() => undefined);
           resolve();
           return;
@@ -227,7 +230,7 @@ async function scanViaZipball(
         unzip.push(value!);
         pump();
       }).catch((e) => {
-        errors.push(`${owner}/${repo}: zipball stream error — ${e}`);
+        errors.push({ code: 'TIMEOUT', message: `${owner}/${repo}: zipball stream error`, context: { error: String(e) } });
         reader.cancel().catch(() => undefined);
         // Resolve (not reject) so a stalled stream degrades to "0 matches,
         // 1 error" for this commit rather than aborting the whole scan run.
@@ -260,7 +263,7 @@ async function scanViaGitTrees(
   ref: string = 'HEAD',
 ): Promise<ZipballScanResult> {
   const allMatches: Match[] = [];
-  const errors: string[] = [];
+  const errors: ScanError[] = [];
   let filesScanned = 0;
   let bytesRead    = 0;
   let rateLimit: RateLimitInfo = { remaining: 4999, resetIso: null };
@@ -273,7 +276,7 @@ async function scanViaGitTrees(
     rateLimit = rl;
     const data = body as { tree: TreeEntry[]; truncated: boolean };
     if (data.truncated) {
-      errors.push(`${owner}/${repo}: tree truncated by GitHub — very large repo, some files skipped`);
+      errors.push({ code: 'REPO_TOO_LARGE', message: `${owner}/${repo}: tree truncated by GitHub — very large repo, some files skipped` });
     }
     tree = data.tree.filter(
       (e) =>
@@ -288,7 +291,7 @@ async function scanViaGitTrees(
 
     const MAX_TREE_FILES_TO_SCAN = 100;
     if (tree.length > MAX_TREE_FILES_TO_SCAN) {
-      errors.push(`${owner}/${repo}: repository has ${tree.length} files. Git Trees scanning is capped at first ${MAX_TREE_FILES_TO_SCAN} files to prevent rate-limit exhaustion.`);
+      errors.push({ code: 'REPO_TOO_LARGE', message: `${owner}/${repo}: repository has ${tree.length} files. Git Trees scanning is capped at first ${MAX_TREE_FILES_TO_SCAN} files to prevent rate-limit exhaustion.` });
       tree = tree.slice(0, MAX_TREE_FILES_TO_SCAN);
     }
   } catch (e) {
@@ -306,6 +309,9 @@ async function scanViaGitTrees(
     if (allMatches.length >= MAX_MATCHES_PER_SCAN) break;
 
     const batch = tree.slice(i, i + TREE_BATCH_SIZE);
+    let minRemaining = Infinity;
+    let lastResetIso: string | null = null;
+    
     await Promise.all(
       batch.map(async (entry) => {
         if (allMatches.length >= MAX_MATCHES_PER_SCAN) return;
@@ -314,7 +320,11 @@ async function scanViaGitTrees(
             `/repos/${owner}/${repo}/contents/${entry.path}`,
             githubToken,
           );
-          rateLimit = rl; // keep the most recent rate-limit reading
+          // Track minimum remaining across parallel requests
+          if (rl.remaining < minRemaining) {
+            minRemaining = rl.remaining;
+            lastResetIso = rl.resetIso;
+          }
 
           const file = body as { content?: string; encoding?: string };
           if (!file.content || file.encoding !== 'base64') return;
@@ -332,6 +342,11 @@ async function scanViaGitTrees(
         }
       })
     );
+    
+    // Update rateLimit with minimum from this batch
+    if (minRemaining !== Infinity) {
+      rateLimit = { remaining: minRemaining, resetIso: lastResetIso };
+    }
   }
 
   return { matches: allMatches, filesScanned, bytesRead, errors, rateLimit };
@@ -394,7 +409,14 @@ export async function scanRepo(
 // Backwards-compatible alias (used by tests / legacy callers)
 // ---------------------------------------------------------------------------
 
-/** @deprecated Use scanRepo() which auto-selects the optimal scan mode. */
+/**
+ * @deprecated Use scanRepo() which auto-selects the optimal scan mode.
+ * @internal This function is maintained for backwards compatibility only.
+ * It will be removed in the next major version (v2.0.0).
+ * 
+ * Migration: Replace `scanZipball(zipUrl, token, templates)` with
+ * `scanRepo(owner, repo, token, templates)`.
+ */
 export async function scanZipball(
   zipUrl: string,
   githubToken: string,

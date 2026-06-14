@@ -67,7 +67,7 @@ RepoScout does not require you to manually provide a list of repositories to sca
 
 - **Continuous discovery** — every run, the crawler queries `pushed:>LAST_RUN is:public` to find repos that received new commits since the previous run.
 - **Change-aware** — repos already in the SQLite database are only re-queued if their `pushed_at` timestamp has advanced. Stale repos are skipped.
-- **KV-backed cursor** — the last-run timestamp is stored in a local key-value store. On the first run, it defaults to 24 hours ago.
+- **Cache-backed cursor** — the last-run timestamp is stored in a local key-value store. On the first run, it defaults to 24 hours ago.
 - **Rate-limit safe** — the crawler consumes at most 5 GitHub Search API requests per run (150 repos) from the GITHUB_TOKEN pool, leaving the remaining quota for zipball scanning.
 - **Deduplication** — repos are upserted by `(owner, name)` — duplicates never accumulate.
 
@@ -125,7 +125,7 @@ Each monitored repository receives a numeric `risk_score` (the sum of `SeverityW
 The heart of RepoScout — a **5-node intelligent state machine** (expanded to 8 nodes) that transforms raw pattern matches into actionable security intelligence:
 - **Context-Aware Analysis** — Gathers ±5 lines of surrounding code for AI evaluation.
 - **Heuristic Pre-filtering** — Instantly dismisses obvious placeholders (`xxxx`, `dummy`, `your_key`) and low-entropy patterns.
-- **30+ Provider Live Testing** — Real-time API validation against GitHub, GitLab, AWS, Stripe, Slack, Anthropic, OpenAI, HuggingFace, SendGrid, Twilio, Shopify, DigitalOcean, Mailchimp, Square, Datadog, NewRelic, npm, PyPI, DockerHub, Cloudflare, Heroku, Netlify, Vercel, Linear, Notion, Discord, Telegram, Dropbox, Twitch, Zoom, Asana, Mailgun, Sentry, Airtable, PayPal.
+- **30+ Provider Live Testing** — Real-time API validation against GitHub, GitLab, AWS, Stripe, Slack, Anthropic, OpenAI, HuggingFace, SendGrid, Twilio, Shopify, DigitalOcean, Mailchimp, Square, Datadog, NewRelic, npm, PyPI, DockerHub, Heroku, Netlify, Vercel, Linear, Notion, Discord, Telegram, Dropbox, Twitch, Zoom, Asana, Mailgun, Sentry, Airtable, PayPal.
 - **RSA Proof-of-Possession** — Private keys validated via `crypto.subtle` sign+verify (no network call needed).
 - **LLM Classification** — Ollama (`gemma4:latest`) analyzes unverifiable findings with confidence scoring.
 - **AWS Pair Reconstruction** — Reconstructs AWS key pairs from surrounding context and validates live via STS `GetCallerIdentity`.
@@ -145,7 +145,7 @@ The heart of RepoScout — a **5-node intelligent state machine** (expanded to 8
 ## Architecture
 
 Built as a lightweight, modular TypeScript/Node package powered by:
-- **Autonomous Crawler**: Queries GitHub Search API for recent pushes, storing the cursor inside a local KV table.
+- **Autonomous Crawler**: Queries GitHub Search API for recent pushes, storing the cursor inside a local cache table.
 - **AI Verification Core**: LangGraph.js `StateGraph` with 8 specialized nodes + local Ollama model integration.
 - **Database**: SQLite (`better-sqlite3`) — containing tables for `repositories`, `scan_runs`, `findings`, `ai_evaluations`, `scan_tokens`, and `kv_store`.
 - **CLI Tool**: `repo-cli` for querying, scanning, and running workflows.

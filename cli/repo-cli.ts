@@ -95,6 +95,14 @@ const ROOT = findProjectRoot();
 const API_BASE = process.env.REPOSCOUT_API_BASE || 'http://localhost:3000';
 
 // ---------------------------------------------------------------------------
+// Input validation
+// ---------------------------------------------------------------------------
+
+function validateRepoSlug(slug: string): boolean {
+  return /^[\w.-]+\/[\w.-]+$/.test(slug);
+}
+
+// ---------------------------------------------------------------------------
 // Fetch helper
 // ---------------------------------------------------------------------------
 
@@ -1013,6 +1021,9 @@ async function main() {
         break;
       case 'scan':
         if (!args[1]) throw new Error('repo-cli scan <owner/repo> [depth]');
+        if (!validateRepoSlug(args[1])) {
+          throw new Error(`Invalid repo format: "${args[1]}". Expected format: owner/repo`);
+        }
         await cmd_scan(args[1], parseInt(args[2] || '') || 5, dbPath, maxFindings);
         break;
       case 'workflow':

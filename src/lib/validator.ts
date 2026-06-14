@@ -76,7 +76,7 @@ export async function validateCredential(
     if (id.includes("firebase")) return await validateFirebase(token, now);
     if (id.includes("algolia")) return await validateAlgolia(token, now);
     if (id.includes("okta")) return await validateOkta(token, now);
-    if (id.includes("cloudflare")) return await validateCloudflare(token, now);
+
     if (id.includes("heroku")) return await validateHeroku(token, now);
     if (id.includes("netlify")) return await validateNetlify(token, now);
     if (id.includes("vercel")) return await validateVercel(token, now);
@@ -328,10 +328,15 @@ async function validateTwilio(
       message: "Invalid Twilio credential format",
       checkedAt: now,
     };
+  // Use Buffer for UTF-8 safe base64 encoding (btoa fails on non-ASCII)
+  const credentials = typeof Buffer !== 'undefined'
+    ? Buffer.from(`${sid}:${authToken}`).toString('base64')
+    : btoa(unescape(encodeURIComponent(`${sid}:${authToken}`)));
+  
   const res = await fetchWithTimeout(
     `https://api.twilio.com/2010-04-01/Accounts/${sid}.json`,
     {
-      headers: { Authorization: `Basic ${btoa(`${sid}:${authToken}`)}` },
+      headers: { Authorization: `Basic ${credentials}` },
     },
   );
   if (res.status === 200)
@@ -429,8 +434,13 @@ async function validateMailchimp(
       message: "Cannot extract Mailchimp DC",
       checkedAt: now,
     };
+  // Use Buffer for UTF-8 safe base64 encoding (btoa fails on non-ASCII)
+  const credentials = typeof Buffer !== 'undefined'
+    ? Buffer.from(`any:${token}`).toString('base64')
+    : btoa(unescape(encodeURIComponent(`any:${token}`)));
+  
   const res = await fetchWithTimeout(`https://${dc}.api.mailchimp.com/3.0/ping`, {
-    headers: { Authorization: `Basic ${btoa(`any:${token}`)}` },
+    headers: { Authorization: `Basic ${credentials}` },
   });
   if (res.status === 200)
     return {
@@ -641,51 +651,7 @@ async function validateOkta(
   };
 }
 
-async function validateCloudflare(
-  token: string,
-  now: string,
-): Promise<ValidationResult> {
-  const res = await fetchWithTimeout(
-    "https://api.cloudflare.com/client/v4/user/tokens/verify",
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    },
-  );
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) {
-      return {
-        status: "REVOKED",
-        message: "Cloudflare token invalid",
-        checkedAt: now,
-      };
-    }
-    return {
-      status: "UNVERIFIABLE",
-      message: `Cloudflare returned HTTP ${res.status}`,
-      checkedAt: now,
-    };
-  }
-  try {
-    const body = (await res.json()) as { success: boolean };
-    if (body.success)
-      return {
-        status: "ACTIVE",
-        message: "Cloudflare token verified",
-        checkedAt: now,
-      };
-    return {
-      status: "REVOKED",
-      message: "Cloudflare token invalid",
-      checkedAt: now,
-    };
-  } catch {
-    return {
-      status: "UNVERIFIABLE",
-      message: "Cloudflare API returned invalid JSON",
-      checkedAt: now,
-    };
-  }
-}
+
 
 async function validateHeroku(
   token: string,
@@ -1015,8 +981,13 @@ async function validateMailgun(
   now: string,
 ): Promise<ValidationResult> {
   // Mailgun API keys use HTTP basic auth with user "api"
+  // Use Buffer for UTF-8 safe base64 encoding (btoa fails on non-ASCII)
+  const credentials = typeof Buffer !== 'undefined'
+    ? Buffer.from(`api:${token}`).toString('base64')
+    : btoa(unescape(encodeURIComponent(`api:${token}`)));
+  
   const res = await fetchWithTimeout("https://api.mailgun.net/v3/domains", {
-    headers: { Authorization: `Basic ${btoa(`api:${token}`)}` },
+    headers: { Authorization: `Basic ${credentials}` },
   });
   if (res.status === 200)
     return {

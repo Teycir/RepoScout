@@ -2,8 +2,73 @@
 // TypeScript port of secretscout-types/src/lib.rs
 // Single source of truth for all domain types shared across scanner, validator, pipeline, and UI.
 
-import type { D1Database, KVNamespace, Ai } from './cloudflare-stubs.js';
 export { maskSecret } from './masking.js';
+
+// ---------------------------------------------------------------------------
+// Database interface (generic)
+// ---------------------------------------------------------------------------
+
+export interface Database {
+  prepare(sql: string): PreparedStatement;
+  exec(sql: string): ExecResult;
+  batch<T>(statements: PreparedStatement[]): Promise<QueryResult<T>[]>;
+}
+
+export interface PreparedStatement {
+  bind(...values: unknown[]): PreparedStatement;
+  run<T = unknown>(): Promise<QueryResult<T>>;
+  all<T = unknown>(): Promise<QueryResult<T>>;
+  get<T = unknown>(): Promise<T | null>;
+}
+
+export interface QueryResult<T = unknown> {
+  success: boolean;
+  results: T[];
+  meta?: {
+    changes?: number;
+    last_row_id?: number;
+    rows_read?: number;
+    rows_written?: number;
+  };
+}
+
+export interface ExecResult {
+  count: number;
+  duration: number;
+}
+
+export interface CacheStore {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, opts?: { expirationTtl?: number }): Promise<void>;
+  delete(key: string): Promise<void>;
+  list(opts?: { prefix?: string }): Promise<{ keys: { name: string }[] }>;
+}
+
+export interface AiService {
+  run(model: string, inputs: any): Promise<any>;
+}
+
+// ---------------------------------------------------------------------------
+// Error handling
+// ---------------------------------------------------------------------------
+
+export type ErrorCode = 
+  | 'RATE_LIMIT'
+  | 'TIMEOUT'
+  | 'VALIDATION_FAILED'
+  | 'NETWORK_ERROR'
+  | 'PARSE_ERROR'
+  | 'FILE_TOO_LARGE'
+  | 'REPO_TOO_LARGE'
+  | 'DECOMPRESS_ERROR'
+  | 'SCAN_ERROR'
+  | 'UNKNOWN';
+
+export interface ScanError {
+  code: ErrorCode;
+  message: string;
+  context?: any;
+}
 
 // ---------------------------------------------------------------------------
 // Templates & Patterns
@@ -142,13 +207,13 @@ export function riskLevel(score: number): 'None' | 'Low' | 'Medium' | 'High' | '
 }
 
 // ---------------------------------------------------------------------------
-// Cloudflare Worker Env binding interface
+// Worker Env binding interface
 // ---------------------------------------------------------------------------
 
 export interface Env {
-  DB:    D1Database;
-  CACHE: KVNamespace;
-  AI:    Ai;
+  DB:    Database;
+  CACHE: CacheStore;
+  AI:    AiService;
   SUMMARY_MODEL?:            string;
   SCAN_MAX_CONCURRENT_REPOS?: string;
 }
