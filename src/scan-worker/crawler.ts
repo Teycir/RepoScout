@@ -21,6 +21,7 @@
 // loop picks repos from DB.  This means newly-discovered repos are
 // immediately eligible for scanning in the same cron invocation.
 
+import { fetchFirstRow } from '../lib/types.js';
 import type { Env } from '../lib/types.js';
 
 // ---------------------------------------------------------------------------
@@ -236,7 +237,7 @@ export async function discoverRepos(
 
   for (let page = 1; page <= MAX_SEARCH_PAGES; page++) {
     try {
-      const { items, remaining } = await searchPage(rawToken, query, page);
+      const { items, remaining, resetIso } = await searchPage(rawToken, query, page);
 
       if (items.length === 0) break; // no more results
 
@@ -277,11 +278,11 @@ export async function discoverRepos(
     const pushedAt = item.pushed_at;
 
     try {
-      // Check if repo already exists
-      const existing = await env.DB
-        .prepare(`SELECT id, pushed_at, last_scan_status FROM repositories WHERE owner = ? AND name = ?`)
-        .bind(owner, name)
-        .first<{ id: string; pushed_at: string | null; last_scan_status: string }>();
+      const existing = await fetchFirstRow<{ id: string; pushed_at: string | null; last_scan_status: string }>(
+        env.DB
+          .prepare(`SELECT id, pushed_at, last_scan_status FROM repositories WHERE owner = ? AND name = ?`)
+          .bind(owner, name)
+      );
 
       if (existing) {
         // Repo already tracked — only re-queue if pushed_at advanced

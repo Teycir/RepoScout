@@ -299,7 +299,7 @@ async function scanViaGitTrees(
       matches:      [],
       filesScanned: 0,
       bytesRead:    0,
-      errors:       [`Failed to fetch tree for ${owner}/${repo}: ${e}`],
+      errors:       [{ code: 'NETWORK_ERROR', message: `Failed to fetch tree for ${owner}/${repo}: ${e}` }],
       rateLimit,
     };
   }
@@ -338,7 +338,7 @@ async function scanViaGitTrees(
           }
           filesScanned++;
         } catch (e) {
-          errors.push(`Blob fetch error for ${entry.path}: ${e}`);
+          errors.push({ code: 'SCAN_ERROR', message: `Blob fetch error for ${entry.path}: ${e}` });
         }
       })
     );
@@ -390,7 +390,7 @@ export async function scanRepo(
       matches: [],
       filesScanned: 0,
       bytesRead: 0,
-      errors: [errorMsg],
+      errors: [{ code: 'REPO_TOO_LARGE', message: errorMsg }],
       rateLimit: { remaining: 4999, resetIso: null },
     };
   }
@@ -434,7 +434,7 @@ export async function scanZipball(
     matches:      [],
     filesScanned: 0,
     bytesRead:    0,
-    errors:       [`scanZipball: could not parse owner/repo from URL: ${zipUrl}`],
+    errors:       [{ code: 'PARSE_ERROR', message: `scanZipball: could not parse owner/repo from URL: ${zipUrl}` }],
     rateLimit:    { remaining: 4999, resetIso: null },
   };
 }

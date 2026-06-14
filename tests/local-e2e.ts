@@ -251,7 +251,8 @@ async function main() {
       continue;
     }
 
-    const { matches, filesScanned, errors } = scanResult;
+    const { matches, filesScanned } = scanResult;
+    const errors = scanResult.errors.map(e => e.message);
     const scanMs = Date.now() - t0;
 
     console.log(`  files : ${filesScanned}  |  matches : ${matches.length}  |  ${scanMs}ms`);

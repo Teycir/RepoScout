@@ -73,7 +73,22 @@ export async function validateCredential(
     if (id.includes("pypi")) return await validatePyPI(token, now);
     if (id.includes("dockerhub") || id.includes("docker-hub"))
       return await validateDockerHub(token, now);
-    if (id.includes("firebase")) return await validateFirebase(token, now);
+    if (id.includes("google-api-key") || id.includes("gcp-api-key"))
+      return await validateGoogleApiKey(token, now);
+    if (id.includes("firebase")) {
+      const cleanToken = token.split("|")[0]!;
+      if (cleanToken.startsWith("AIzaSy")) {
+        return await validateGoogleApiKey(token, now);
+      }
+      return await validateFirebase(token, now);
+    }
+    if (id.includes("jwt-token")) {
+      const cleanToken = token.split("|")[0]!;
+      const payload = decodeJwt(cleanToken);
+      if (payload && (payload.iss === "supabase" || payload.ref)) {
+        return await validateSupabaseKey(token, now);
+      }
+    }
     if (id.includes("algolia")) return await validateAlgolia(token, now);
     if (id.includes("okta")) return await validateOkta(token, now);
 
@@ -1155,6 +1170,123 @@ function pkcs1ToPkcs8(pkcs1Der: Uint8Array): Uint8Array {
   return derWrap(0x30, body); // outer SEQUENCE — PrivateKeyInfo
 }
 
+function decodeJwt(token: string): any {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payloadB64 = parts[1]!.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonStr = atob(payloadB64);
+    return JSON.parse(jsonStr);
+  } catch {
+    return null;
+  }
+}
+
+async function validateGoogleApiKey(
+  token: string,
+  now: string,
+): Promise<ValidationResult> {
+  const key = token.split("|")[0]!;
+  try {
+    const url = `https://www.googleapis.com/identitytoolkit/v3/retdb/getProjectConfig?key=${key}`;
+    const res = await fetchWithTimeout(url, { method: "POST" });
+    const status = res.status;
+    
+    if (status === 200) {
+      return {
+        status: "ACTIVE",
+        message: "Google API key is active and valid (Identity Toolkit config check returned 200)",
+        checkedAt: now,
+      };
+    }
+    
+    const body = (await res.json().catch(() => ({}))) as any;
+    const errorMsg = body?.error?.message || "";
+    
+    if (errorMsg.includes("API key not valid")) {
+      return {
+        status: "REVOKED",
+        message: `Google API key is invalid/revoked: ${errorMsg}`,
+        checkedAt: now,
+      };
+    }
+    
+    if (errorMsg.includes("API_KEY_SERVICE_BLOCKED") || errorMsg.includes("requests are blocked")) {
+      return {
+        status: "ACTIVE",
+        message: `Google API key is active (service restricted/blocked: ${errorMsg})`,
+        checkedAt: now,
+      };
+    }
+    
+    return {
+      status: "UNVERIFIABLE",
+      message: `Google API key check returned status ${status}: ${errorMsg || "Unknown error"}`,
+      checkedAt: now,
+    };
+  } catch (e) {
+    return {
+      status: "UNVERIFIABLE",
+      message: `Network error verifying Google API key: ${e instanceof Error ? e.message : String(e)}`,
+      checkedAt: now,
+    };
+  }
+}
+
+async function validateSupabaseKey(
+  token: string,
+  now: string,
+): Promise<ValidationResult> {
+  const cleanToken = token.split("|")[0]!;
+  const payload = decodeJwt(cleanToken);
+  if (!payload || !payload.ref) {
+    return {
+      status: "UNVERIFIABLE",
+      message: "JWT token does not contain Supabase project reference",
+      checkedAt: now,
+    };
+  }
+  
+  const ref = payload.ref;
+  try {
+    const url = `https://${ref}.supabase.co/rest/v1/`;
+    const res = await fetchWithTimeout(url, {
+      headers: {
+        apikey: cleanToken,
+        Authorization: `Bearer ${cleanToken}`,
+      },
+    });
+    
+    if (res.status === 200 || res.status === 300 || res.status === 404) {
+      return {
+        status: "ACTIVE",
+        message: `Supabase key is active (REST API returned status ${res.status})`,
+        checkedAt: now,
+      };
+    }
+    
+    if (res.status === 401 || res.status === 403) {
+      return {
+        status: "REVOKED",
+        message: `Supabase key is unauthorized/revoked (REST API returned status ${res.status})`,
+        checkedAt: now,
+      };
+    }
+    
+    return {
+      status: "UNVERIFIABLE",
+      message: `Supabase check returned unexpected status ${res.status}`,
+      checkedAt: now,
+    };
+  } catch (e) {
+    return {
+      status: "UNVERIFIABLE",
+      message: `Network error verifying Supabase key: ${e instanceof Error ? e.message : String(e)}`,
+      checkedAt: now,
+    };
+  }
+}
+
 async function validatePrivateKey(
   pem: string,
   now: string,
@@ -1174,68 +1306,121 @@ async function validatePrivateKey(
 
     let der = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
-    // "-----BEGIN RSA PRIVATE KEY-----" is PKCS#1 — wrap it in a PKCS#8
-    // PrivateKeyInfo envelope before handing it to crypto.subtle.
-    if (/-----BEGIN RSA PRIVATE KEY-----/.test(pem)) {
-      der = pkcs1ToPkcs8(der) as any;
-    }
+    let privateKey: any;
+    let algorithm: any;
+    let keyType = "";
 
-    // Import as RSASSA-PKCS1-v1_5 signing key
-    const privateKey = await crypto.subtle.importKey(
-      "pkcs8",
-      der,
-      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-      true, // extractable — needed to re-export public key
-      ["sign"],
-    );
+    try {
+      // 1. Try RSA
+      let rsaDer = der;
+      if (/-----BEGIN RSA PRIVATE KEY-----/.test(pem)) {
+        rsaDer = pkcs1ToPkcs8(der) as any;
+      }
+      privateKey = await crypto.subtle.importKey(
+        "pkcs8",
+        rsaDer,
+        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+        true,
+        ["sign"],
+      );
+      algorithm = "RSASSA-PKCS1-v1_5";
+      keyType = "RSA";
+    } catch (rsaErr) {
+      // 2. Try ECDSA P-256
+      try {
+        privateKey = await crypto.subtle.importKey(
+          "pkcs8",
+          der,
+          { name: "ECDSA", namedCurve: "P-256" },
+          true,
+          ["sign"],
+        );
+        algorithm = { name: "ECDSA", hash: { name: "SHA-256" } };
+        keyType = "EC (P-256)";
+      } catch (ec256Err) {
+        // 3. Try ECDSA P-384
+        try {
+          privateKey = await crypto.subtle.importKey(
+            "pkcs8",
+            der,
+            { name: "ECDSA", namedCurve: "P-384" },
+            true,
+            ["sign"],
+          );
+          algorithm = { name: "ECDSA", hash: { name: "SHA-384" } };
+          keyType = "EC (P-384)";
+        } catch (ec384Err) {
+          // 4. Try ECDSA P-521
+          privateKey = await crypto.subtle.importKey(
+            "pkcs8",
+            der,
+            { name: "ECDSA", namedCurve: "P-521" },
+            true,
+            ["sign"],
+          );
+          algorithm = { name: "ECDSA", hash: { name: "SHA-512" } };
+          keyType = "EC (P-521)";
+        }
+      }
+    }
 
     // Sign a fixed test payload
     const payload = new TextEncoder().encode(
       "reposcout-key-proof-of-possession",
     );
     const signature = await crypto.subtle.sign(
-      "RSASSA-PKCS1-v1_5",
+      algorithm,
       privateKey,
       payload,
     );
 
     // Export the public key and verify the signature
-    const publicKeyDer = await crypto.subtle.exportKey("spki", privateKey);
-    const publicKey = await crypto.subtle.importKey(
-      "spki",
-      publicKeyDer,
-      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-      false,
-      ["verify"],
-    );
+    let publicKey: CryptoKey;
+    if (keyType.startsWith("EC")) {
+      const jwk = await crypto.subtle.exportKey("jwk", privateKey);
+      const { d, ...publicJwk } = jwk;
+      publicJwk.key_ops = ["verify"];
+      publicKey = await crypto.subtle.importKey(
+        "jwk",
+        publicJwk,
+        { name: "ECDSA", namedCurve: keyType.match(/P-\d+/)?.[0] },
+        false,
+        ["verify"],
+      );
+    } else {
+      const publicKeyDer = await crypto.subtle.exportKey("spki", privateKey);
+      publicKey = await crypto.subtle.importKey(
+        "spki",
+        publicKeyDer,
+        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+        false,
+        ["verify"],
+      );
+    }
 
     const valid = await crypto.subtle.verify(
-      "RSASSA-PKCS1-v1_5",
+      algorithm,
       publicKey,
       signature,
       payload,
     );
+
     if (valid) {
       return {
         status: "ACTIVE",
-        message: "RSA private key passed sign+verify proof-of-possession",
+        message: `${keyType} private key passed sign+verify proof-of-possession`,
         checkedAt: now,
       };
     }
     return {
       status: "UNVERIFIABLE",
-      message: "RSA sign+verify mismatch — unexpected",
+      message: `${keyType} sign+verify mismatch — unexpected`,
       checkedAt: now,
     };
   } catch (e) {
-    // importKey throws on formats this validator doesn't handle (EC keys,
-    // OpenSSH's own container format, encrypted PKCS#8, or genuinely
-    // malformed PEM). That's a parser limitation, not proof the credential
-    // is fake — return UNVERIFIABLE so it gets a second look from the LLM
-    // classifier instead of being short-circuited to FALSE_POSITIVE.
     return {
       status: "UNVERIFIABLE",
-      message: `Could not verify as RSA private key: ${e instanceof Error ? e.message : String(e)}`,
+      message: `Could not verify private key: ${e instanceof Error ? e.message : String(e)}`,
       checkedAt: now,
     };
   }

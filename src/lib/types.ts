@@ -10,7 +10,7 @@ export { maskSecret } from './masking.js';
 
 export interface Database {
   prepare(sql: string): PreparedStatement;
-  exec(sql: string): ExecResult;
+  exec(sql: string): Promise<ExecResult>;
   batch<T>(statements: PreparedStatement[]): Promise<QueryResult<T>[]>;
 }
 
@@ -18,7 +18,18 @@ export interface PreparedStatement {
   bind(...values: unknown[]): PreparedStatement;
   run<T = unknown>(): Promise<QueryResult<T>>;
   all<T = unknown>(): Promise<QueryResult<T>>;
-  get<T = unknown>(): Promise<T | null>;
+  get?<T = unknown>(): Promise<T | null>;
+  first?<T = unknown>(colName?: string): Promise<T | null>;
+}
+
+export async function fetchFirstRow<T>(stmt: PreparedStatement): Promise<T | null> {
+  if (stmt.first) {
+    return await stmt.first<T>();
+  }
+  if (stmt.get) {
+    return await stmt.get<T>();
+  }
+  throw new Error("PreparedStatement has no first() or get() method");
 }
 
 export interface QueryResult<T = unknown> {

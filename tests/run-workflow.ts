@@ -269,7 +269,7 @@ async function main() {
         try {
           const result = await scanRepo(repo.owner, repo.name, nextToken(), patterns, sha);
           filesScannedTotal += result.filesScanned;
-          if (result.errors) errorsList.push(...result.errors);
+          if (result.errors) errorsList.push(...result.errors.map(e => e.message));
           for (const m of result.matches) {
             const key = `${m.filePath}:${m.lineNumber}:${m.patternId}:${m.matchedText}`;
             if (!allMatchesMap.has(key)) {

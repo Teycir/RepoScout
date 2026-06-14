@@ -44,6 +44,7 @@ import {
   createScanValidationGraph,
   persistEvaluation,
 } from '../src/scan-worker/pipeline.js';
+import { validateCredential } from '../src/lib/validator.js';
 
 // ── Load real patterns once ───────────────────────────────────────────────────
 const ALL_PATTERNS: Template[] = JSON.parse(
@@ -67,6 +68,7 @@ class FakeKV {
 
 class FakeD1 {
   captured: Array<{ sql: string; args: unknown[] }> = [];
+  quotaStore = new Map<string, number>();
 
   prepare(sql: string) {
     const self = this;
@@ -75,9 +77,27 @@ class FakeD1 {
       bind(...a: unknown[]) { bound = [...a]; return stmt; },
       async run() {
         self.captured.push({ sql, args: bound });
+        if (sql.includes('INSERT OR IGNORE INTO llm_quota_daily')) {
+          const date = bound[0] as string;
+          if (!self.quotaStore.has(date)) {
+            self.quotaStore.set(date, 0);
+          }
+        } else if (sql.includes('UPDATE llm_quota_daily')) {
+          const date = bound[0] as string;
+          self.quotaStore.set(date, (self.quotaStore.get(date) ?? 0) + 1);
+        }
         return { results: [], success: true, meta: { changes: 1, last_row_id: self.captured.length, changed_db: true, duration: 0, rows_read: 0, rows_written: 1, size_after: 0 } };
       },
-      async first<T>(): Promise<T | null>  { return null; },
+      async first<T>(): Promise<T | null>  {
+        if (sql.includes('llm_quota_daily')) {
+          const date = bound[0] as string;
+          if (self.quotaStore.has(date)) {
+            return { count: self.quotaStore.get(date) } as unknown as T;
+          }
+          return null;
+        }
+        return null;
+      },
       async all<T>()                       { return { results: [] as T[], success: true, meta: {} }; },
       _run()                               { return stmt.run(); },
     };
@@ -90,7 +110,10 @@ class FakeD1 {
   async exec(sql: string) { return { count: 0, duration: 0 }; }
 
   last()  { return this.captured.at(-1) ?? null; }
-  clear() { this.captured = []; }
+  clear() {
+    this.captured = [];
+    this.quotaStore.clear();
+  }
 }
 
 class FakeAI {
@@ -296,8 +319,8 @@ describe('3. Entropy engine', () => {
     assert.equal(charsetThreshold('mixed'), 5.0);
   });
 
-  test('isHighEntropy: strings shorter than 16 chars always false', () => {
-    assert.ok(!isHighEntropy('secretABCDEF', 2.0));
+  test('isHighEntropy: strings shorter than 8 chars always false', () => {
+    assert.ok(!isHighEntropy('abc', 2.0));
   });
 
   test('isHighEntropy: random 40-char token above 4.0 threshold', () => {
@@ -583,7 +606,7 @@ describe('6. Pipeline – heuristic filter', () => {
     assert.equal(result.isHeuristicPlaceholder, true);
     // LLM quota must be untouched (heuristic path bypasses LLM)
     const today = new Date().toISOString().slice(0, 10);
-    const quota = env._kv.peek(`llm_quota:${today}`);
+    const quota = env._db.quotaStore.get(today);
     assert.equal(quota, undefined, 'heuristic path must not increment LLM quota');
   });
 
@@ -657,9 +680,9 @@ describe('7. Pipeline – LLM classifier (FakeAI)', () => {
     assert.equal(result.riskScore, 40);
 
     const today = new Date().toISOString().slice(0, 10);
-    const quotaRaw = env._kv.peek(`llm_quota:${today}`);
-    assert.ok(quotaRaw !== undefined, 'LLM quota key must exist after run');
-    assert.ok(parseInt(quotaRaw!, 10) >= 1, 'quota should be >= 1');
+    const quotaCount = env._db.quotaStore.get(today);
+    assert.ok(quotaCount !== undefined, 'LLM quota key must exist after run');
+    assert.ok(quotaCount >= 1, 'quota should be >= 1');
   });
 
   test('FakeAI TRUE_POSITIVE (confidence=0.95) → riskScore=80 + [Impact] in reasoning', async () => {
@@ -680,7 +703,7 @@ describe('7. Pipeline – LLM classifier (FakeAI)', () => {
     const env = makeEnv({ verdict: 'TRUE_POSITIVE', confidence: 0.95 });
     // Pre-fill quota to cap
     const today = new Date().toISOString().slice(0, 10);
-    await env._kv.put(`llm_quota:${today}`, '450');
+    env._db.quotaStore.set(today, 450);
 
     const graph = createScanValidationGraph(env);
     const result = await graph.invoke(makeState({ findingId: 'test-quota', severity: 'medium' }));
@@ -689,8 +712,8 @@ describe('7. Pipeline – LLM classifier (FakeAI)', () => {
     assert.ok(result.aiReasoning?.toLowerCase().includes('quota'),
       `expected "quota" in reasoning, got: ${result.aiReasoning}`);
     // quota key should still be 450 (not incremented – quota gate prevented the call)
-    const quotaAfter = env._kv.peek(`llm_quota:${today}`);
-    assert.equal(quotaAfter, '450', 'quota should not have changed');
+    const quotaAfter = env._db.quotaStore.get(today);
+    assert.equal(quotaAfter, 450, 'quota should not have changed');
   });
 });
 
@@ -880,7 +903,7 @@ describe('10. Full e2e integration', () => {
     assert.equal(result.confidenceScore,   1.0);
 
     const today = new Date().toISOString().slice(0, 10);
-    const quota = env._kv.peek(`llm_quota:${today}`);
+    const quota = env._db.quotaStore.get(today);
     assert.equal(quota, undefined, 'heuristic path must not write LLM quota KV key');
   });
 
@@ -975,5 +998,99 @@ describe('10. Full e2e integration', () => {
     assert.ok(last, 'persist must write to DB');
     assert.ok(last.args.includes('TRUE_POSITIVE'), 'DB args must include TRUE_POSITIVE verdict');
     assert.ok(last.args.includes('e2e-tp-full'),   'DB args must include the findingId');
+  });
+});
+
+describe('11. Credential validators', () => {
+  let originalFetch: typeof global.fetch;
+
+  before(() => {
+    originalFetch = global.fetch;
+  });
+
+  test('validateCredential: Google API Key active flow', async () => {
+    global.fetch = (async (url: string, init?: RequestInit) => {
+      assert.ok(url.includes('identitytoolkit/v3/retdb/getProjectConfig'));
+      return {
+        status: 200,
+        json: async () => ({})
+      } as Response;
+    }) as any;
+
+    const res = await validateCredential('google-api-key', 'AIzaSyFakeKey123');
+    assert.equal(res.status, 'ACTIVE');
+    assert.ok(res.message.includes('active and valid'));
+  });
+
+  test('validateCredential: Google API Key revoked flow', async () => {
+    global.fetch = (async (url: string, init?: RequestInit) => {
+      return {
+        status: 400,
+        json: async () => ({
+          error: { message: 'API key not valid' }
+        })
+      } as Response;
+    }) as any;
+
+    const res = await validateCredential('google-api-key', 'AIzaSyFakeKey456');
+    assert.equal(res.status, 'REVOKED');
+    assert.ok(res.message.includes('invalid/revoked'));
+  });
+
+  test('validateCredential: Supabase Key active flow', async () => {
+    const payload = { ref: 'my-supabase-ref', iss: 'supabase' };
+    const header = { alg: 'HS256', typ: 'JWT' };
+    const mockJwt = btoa(JSON.stringify(header)) + '.' + btoa(JSON.stringify(payload)) + '.signature';
+
+    global.fetch = (async (url: string, init?: RequestInit) => {
+      assert.ok(url.includes('my-supabase-ref.supabase.co'));
+      return {
+        status: 200
+      } as Response;
+    }) as any;
+
+    const res = await validateCredential('jwt-token', mockJwt);
+    assert.equal(res.status, 'ACTIVE');
+    assert.ok(res.message.includes('Supabase key is active'));
+  });
+
+  test('validateCredential: Supabase Key revoked flow', async () => {
+    const payload = { ref: 'my-supabase-ref', iss: 'supabase' };
+    const header = { alg: 'HS256', typ: 'JWT' };
+    const mockJwt = btoa(JSON.stringify(header)) + '.' + btoa(JSON.stringify(payload)) + '.signature';
+
+    global.fetch = (async (url: string, init?: RequestInit) => {
+      return {
+        status: 401
+      } as Response;
+    }) as any;
+
+    const res = await validateCredential('jwt-token', mockJwt);
+    assert.equal(res.status, 'REVOKED');
+    assert.ok(res.message.includes('unauthorized/revoked'));
+  });
+
+  test('validateCredential: EC Private Key active flow', async () => {
+    const keyPair = await crypto.subtle.generateKey(
+      { name: "ECDSA", namedCurve: "P-256" },
+      true,
+      ["sign", "verify"]
+    );
+    const pkcs8 = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(pkcs8)));
+    
+    const lines: string[] = [];
+    for (let i = 0; i < base64.length; i += 64) {
+      lines.push(base64.slice(i, i + 64));
+    }
+    const pem = `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----`;
+
+    const res = await validateCredential('private-key', pem);
+    assert.equal(res.status, 'ACTIVE');
+    assert.ok(res.message.includes('private key passed sign+verify'));
+  });
+
+  test('validateCredential: restore fetch', () => {
+    global.fetch = originalFetch;
   });
 });

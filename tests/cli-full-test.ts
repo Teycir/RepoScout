@@ -313,7 +313,7 @@ async function main() {
       try {
         const result = await scanRepo(repo.owner, repo.name, nextToken(), patterns, sha);
         filesTotal += result.filesScanned;
-        errors.push(...(result.errors ?? []));
+        errors.push(...(result.errors ?? []).map(e => e.message));
         let newForCommit = 0;
         for (const m of result.matches) {
           const key = `${m.filePath}:${m.lineNumber}:${m.patternId}:${m.matchedText}`;

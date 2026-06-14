@@ -5,7 +5,7 @@
 import { StateGraph, Annotation } from "@langchain/langgraph";
 import { validateCredential } from "../lib/validator.js";
 import { isLikelyPlaceholder } from "../lib/scanner.js";
-import { findingRiskScore } from "../lib/types.js";
+import { findingRiskScore, fetchFirstRow } from "../lib/types.js";
 import type { Severity, Verdict, Database, CacheStore, AiService } from "../lib/types.js";
 
 // ---------------------------------------------------------------------------
@@ -115,7 +115,7 @@ type StateType = typeof ScanFindingState.State;
 
 const LLM_DAILY_CAP = 450;
 
-async function ensureLlmQuotaTable(db: D1Database): Promise<void> {
+async function ensureLlmQuotaTable(db: Database): Promise<void> {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS llm_quota_daily (
       date TEXT PRIMARY KEY,
@@ -124,18 +124,17 @@ async function ensureLlmQuotaTable(db: D1Database): Promise<void> {
   `);
 }
 
-async function checkLlmQuota(db: D1Database): Promise<boolean> {
+async function checkLlmQuota(db: Database): Promise<boolean> {
   await ensureLlmQuotaTable(db);
   const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const row = await db
-    .prepare('SELECT count FROM llm_quota_daily WHERE date = ?')
-    .bind(date)
-    .first<{ count: number }>();
+  const row = await fetchFirstRow<{ count: number }>(
+    db.prepare('SELECT count FROM llm_quota_daily WHERE date = ?').bind(date)
+  );
   const used = row?.count ?? 0;
   return used < LLM_DAILY_CAP;
 }
 
-async function incrementLlmQuota(db: D1Database): Promise<void> {
+async function incrementLlmQuota(db: Database): Promise<void> {
   const date = new Date().toISOString().slice(0, 10);
   // Atomic increment with INSERT OR IGNORE + UPDATE
   await db.prepare(`INSERT OR IGNORE INTO llm_quota_daily (date, count) VALUES (?, 0)`).bind(date).run();

@@ -567,7 +567,7 @@ async function cmd_scan(repoSlug: string, depth = 5, dbPath = '', maxFindings = 
     try {
       const result = await scanRepo(owner, name, nextToken(), patterns, sha);
       filesScannedTotal += result.filesScanned;
-      if (result.errors) errorsList.push(...result.errors);
+      if (result.errors) errorsList.push(...result.errors.map(e => e.message));
       for (const m of result.matches) {
         const key = `${m.filePath}:${m.lineNumber}:${m.patternId}:${m.matchedText}`;
         if (!allMatchesMap.has(key)) {
@@ -792,7 +792,7 @@ async function cmd_workflow(lookbackHours = 24, dbPath = '', maxRepos = 3, maxFi
         try {
           const result = await scanRepo(repo.owner, repo.name, nextToken(), patterns, sha);
           filesScannedTotal += result.filesScanned;
-          if (result.errors) errorsList.push(...result.errors);
+          if (result.errors) errorsList.push(...result.errors.map(e => e.message));
           for (const m of result.matches) {
             const key = `${m.filePath}:${m.lineNumber}:${m.patternId}:${m.matchedText}`;
             if (!allMatchesMap.has(key)) {
