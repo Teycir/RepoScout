@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const _require = createRequire(import.meta.url);
-const Database = _require('./node_modules/better-sqlite3') as typeof import('better-sqlite3').default;
+import Database from 'better-sqlite3';
 
 import { discoverRepos } from '../src/scan-worker/crawler.js';
 
@@ -50,7 +50,7 @@ function makeKV(db: Database.Database): KVNamespace {
   db.exec(`CREATE TABLE IF NOT EXISTS kv_store (k TEXT PRIMARY KEY, v TEXT NOT NULL)`);
   const get = db.prepare('SELECT v FROM kv_store WHERE k = ?');
   const set = db.prepare(`INSERT INTO kv_store (k,v) VALUES (?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v`);
-  return { async get(key: string) { const row = get.get(key) as { v: string } | undefined; return row?.v || null; }, async put(key: string, value: string) { set.run(key, value); }, async delete() {}, async list() { return { keys: [], list_complete: true, cacheStatus: null }; }, async getWithMetadata() { return { value: null, metadata: null, cacheStatus: null }; } } as KVNamespace;
+  return { async get(key: string) { const row = get.get(key) as { v: string } | undefined; return row?.v || null; }, async put(key: string, value: string) { set.run(key, value); }, async delete() {}, async list() { return { keys: [], list_complete: true, cacheStatus: null }; }, async getWithMetadata() { return { value: null, metadata: null, cacheStatus: null }; } } as unknown as KVNamespace;
 }
 
 async function main() {
@@ -59,7 +59,7 @@ async function main() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   const rawEnv = loadDotEnv();
-  const pats = Object.entries(rawEnv).filter(([k]) => k.startsWith('GITHUB_TOKEN_')).map(([, v]) => v);
+  const pats = Object.entries(rawEnv).filter(([k]) => k.startsWith('GITHUB_TOKEN_')).map(([, v]) => v) as string[];
   if (!pats.length) { console.error('❌ No GitHub PATs'); process.exit(1); }
   console.log(`✓ ${pats.length} PATs loaded\n`);
 
@@ -82,7 +82,7 @@ async function main() {
 
     console.log(`Testing ${hours}h window...`);
     const start = Date.now();
-    const result = await discoverRepos({ DB, CACHE }, pats[0]);
+    const result = await discoverRepos({ DB, CACHE, AI: null as any }, pats[0] as string);
     const duration = Date.now() - start;
 
     const total = result.reposDiscovered + result.reposUpdated;

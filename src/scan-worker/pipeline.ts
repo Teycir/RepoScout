@@ -10,6 +10,58 @@ import type { Severity, Verdict } from "../lib/types.js";
 import type { D1Database, KVNamespace, Ai } from "../lib/cloudflare-stubs.js";
 
 // ---------------------------------------------------------------------------
+// Robust JSON parser helper for LLM responses
+// ---------------------------------------------------------------------------
+function robustJsonParse<T extends Record<string, any>>(text: string): T {
+  try {
+    return JSON.parse(text) as T;
+  } catch (err) {
+    const result: Record<string, any> = {};
+
+    // Extract boolean properties
+    const boolMatches = text.matchAll(/"([^"]+)"\s*:\s*(true|false)/gi);
+    for (const m of boolMatches) {
+      if (m[1]) result[m[1]] = m[2] === "true";
+    }
+
+    // Extract numeric properties
+    const numMatches = text.matchAll(/"([^"]+)"\s*:\s*([0-9.]+)/gi);
+    for (const m of numMatches) {
+      if (m[1]) result[m[1]] = parseFloat(m[2]!);
+    }
+
+    // Extract null literal properties
+    const nullMatches = text.matchAll(/"([^"]+)"\s*:\s*null/gi);
+    for (const m of nullMatches) {
+      if (m[1]) result[m[1]] = null;
+    }
+
+    // Extract string properties
+    const stringKeys = ["verdict", "reasoning", "value"];
+    for (const key of stringKeys) {
+      const keyPattern = new RegExp(`"${key}"\\s*:\\s*"(.*)"`, "is");
+      const match = text.match(keyPattern);
+      if (match && match[1]) {
+        let val = match[1];
+        // Clean up trailing parts if another key got matched
+        val = val.replace(/",\s*"confidence".*$/is, "");
+        val = val.replace(/",\s*"verdict".*$/is, "");
+        val = val.replace(/",\s*"reasoning".*$/is, "");
+        val = val.replace(/",\s*"value".*$/is, "");
+        val = val.replace(/",\s*"found".*$/is, "");
+        val = val.replace(/"\s*\}.*$/is, "");
+        result[key] = val;
+      }
+    }
+
+    if (Object.keys(result).length > 0) {
+      return result as T;
+    }
+    throw err;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Env binding interface
 // ---------------------------------------------------------------------------
 
@@ -362,7 +414,7 @@ Respond ONLY with JSON:
     await incrementLlmQuota(env.CACHE);
 
     const text = (response.response ?? response.text ?? "").replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(text) as { found: boolean; value: string | null; reasoning: string };
+    const parsed = robustJsonParse<{ found: boolean; value: string | null; reasoning: string }>(text);
 
     if (!parsed.found || !parsed.value) return {};
 
@@ -449,11 +501,11 @@ Respond ONLY with valid JSON:
     const text = (response.response ?? response.text ?? "")
       .replace(/```json|```/g, "")
       .trim();
-    const parsed = JSON.parse(text) as {
+    const parsed = robustJsonParse<{
       verdict: Verdict;
       reasoning: string;
       confidence: number;
-    };
+    }>(text);
 
     // Increment quota only after we know the response parsed successfully.
     await incrementLlmQuota(env.CACHE);

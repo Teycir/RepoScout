@@ -20,9 +20,8 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const _require = createRequire(import.meta.url);
-const Database = _require('./node_modules/better-sqlite3') as typeof import('better-sqlite3').default;
+import Database from 'better-sqlite3';
 
-import { runCrawler } from '../src/scan-worker/crawler.js';
 import { scanRepo } from '../src/scan-worker/scanner.js';
 import { createScanValidationGraph, persistEvaluation } from '../src/scan-worker/pipeline.js';
 import type { Template } from '../src/lib/types.js';
@@ -101,7 +100,7 @@ function makeKV(db: Database.Database): KVNamespace {
     async delete(key: string) { del.run(key); },
     async list() { return { keys: [], list_complete: true, cacheStatus: null }; },
     async getWithMetadata() { return { value: null, metadata: null, cacheStatus: null }; },
-  } as KVNamespace;
+  } as unknown as KVNamespace;
 }
 
 async function checkOllama(): Promise<string | null> {
@@ -126,7 +125,7 @@ async function main() {
   const rawEnv = loadDotEnv();
   const pats = Object.entries(rawEnv)
     .filter(([k]) => k.startsWith('GITHUB_TOKEN_'))
-    .map(([, v]) => v);
+    .map(([, v]) => v) as string[];
   
   if (!pats.length) {
     console.error('❌ No GitHub PATs found in .env');
@@ -216,7 +215,7 @@ async function main() {
       const startTime = Date.now();
       
       try {
-        const result = await scanRepo(repo.owner, repo.name, pats[0], templates);
+        const result = await scanRepo(repo.owner, repo.name, pats[0] as string, templates);
         const matches = result.matches || [];
         results.findingsFound += matches.length;
         results.reposScanned++;

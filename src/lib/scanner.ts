@@ -245,6 +245,21 @@ export function scanSource(
 
   const lines = source.split("\n");
   const lineOffsets = buildLineOffsets(source);
+
+  // Pre-filter: replace lines longer than MAX_LINE_LENGTH with spaces to prevent ReDoS
+  let filteredSource = source;
+  let hasLongLines = false;
+  const filteredLines = lines.map((line) => {
+    if (line.length > MAX_LINE_LENGTH) {
+      hasLongLines = true;
+      return " ".repeat(line.length);
+    }
+    return line;
+  });
+  if (hasLongLines) {
+    filteredSource = filteredLines.join("\n");
+  }
+
   const suppressed = findSuppressedLines(lines);
   const allMatches: Match[] = [];
   const seen = new Set<string>(); // dedup key: lineNum:col:patternId
@@ -257,12 +272,12 @@ export function scanSource(
     if (template.requireAll && template.patterns.length > 1) {
       // Composite mode: all patterns must match within proximityBytes of each other
       templateMatches.push(
-        ...scanComposite(source, lines, lineOffsets, template),
+        ...scanComposite(filteredSource, lines, lineOffsets, template),
       );
     } else {
       for (const pattern of template.patterns) {
         if (allMatches.length + templateMatches.length >= maxMatches) break;
-        const hits = scanPattern(source, lines, lineOffsets, template, pattern);
+        const hits = scanPattern(filteredSource, lines, lineOffsets, template, pattern);
         templateMatches.push(...hits);
       }
     }

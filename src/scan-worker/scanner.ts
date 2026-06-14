@@ -9,7 +9,6 @@
 import { Unzip, UnzipInflate } from 'fflate';
 import { scanSource, shouldSkipPath } from '../lib/scanner.js';
 import type { Match, Template } from '../lib/types.js';
-import type { D1Database } from '../lib/cloudflare-stubs.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -34,53 +33,6 @@ const BINARY_EXTS = new Set([
   '.tar', '.gz', '.wasm', '.bin', '.dll', '.so',
   '.exe', '.dylib', '.map',
 ]);
-
-// ---------------------------------------------------------------------------
-// PAT pool helpers
-// ---------------------------------------------------------------------------
-
-export interface TokenRow {
-  id: string;
-  token_hash: string;
-  masked_token: string;
-  is_active: number;
-  rate_limit_remaining: number;
-  rate_limit_reset: string | null;
-  last_used_at: string | null;
-}
-
-export async function pickNextToken(
-  db: D1Database,
-): Promise<{ token: string; row: TokenRow } | null> {
-  const row = await db
-    .prepare(
-      `SELECT * FROM scan_tokens
-       WHERE is_active = 1
-         AND (rate_limit_reset IS NULL OR rate_limit_reset <= datetime('now'))
-       ORDER BY rate_limit_remaining DESC
-       LIMIT 1`
-    )
-    .first<TokenRow>();
-  return row ? { token: row.masked_token, row } : null;
-}
-
-export async function recordTokenUsage(
-  db: D1Database,
-  tokenId: string,
-  remaining: number,
-  reset: string | null,
-): Promise<void> {
-  await db
-    .prepare(
-      `UPDATE scan_tokens
-       SET rate_limit_remaining = ?,
-           rate_limit_reset     = ?,
-           last_used_at         = datetime('now')
-       WHERE id = ?`
-    )
-    .bind(remaining, reset, tokenId)
-    .run();
-}
 
 // ---------------------------------------------------------------------------
 // Rate-limit header extraction
@@ -222,7 +174,7 @@ async function scanViaZipball(
             let off = 0;
             for (const c of chunks) { buf.set(c, off); off += c.length; }
 
-            const source = new TextDecoder('utf-8', { fatal: false }).decode(buf);
+            const source = new TextDecoder('utf-8', { fatal: false } as any).decode(buf);
             const hits   = scanSource(source, templates, { filePath, maxMatches: 100 });
 
             for (const m of hits) {

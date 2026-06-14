@@ -14,6 +14,24 @@ export interface ValidationResult {
   checkedAt: string;
 }
 
+const FETCH_TIMEOUT_MS = 10000; // 10 seconds
+
+async function fetchWithTimeout(url: string | URL, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    } as any);
+    clearTimeout(id);
+    return res;
+  } catch (e) {
+    clearTimeout(id);
+    throw e;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Pattern ID → validator dispatch
 // ---------------------------------------------------------------------------
@@ -97,7 +115,7 @@ async function validateGitHub(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.github.com/user", {
+  const res = await fetchWithTimeout("https://api.github.com/user", {
     headers: {
       Authorization: `Bearer ${token}`,
       "User-Agent": "RepoScout-Validator/1.0",
@@ -126,7 +144,7 @@ async function validateGitLab(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://gitlab.com/api/v4/user", {
+  const res = await fetchWithTimeout("https://gitlab.com/api/v4/user", {
     headers: { "PRIVATE-TOKEN": token },
   });
   if (res.status === 200)
@@ -152,40 +170,61 @@ async function validateStripe(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.stripe.com/v1/charges?limit=1", {
+  const res = await fetchWithTimeout("https://api.stripe.com/v1/charges?limit=1", {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (res.status !== 401)
+  if (res.status >= 200 && res.status < 300)
     return { status: "ACTIVE", message: "Stripe key active", checkedAt: now };
-  return { status: "REVOKED", message: "Stripe key invalid", checkedAt: now };
+  if (res.status === 401)
+    return { status: "REVOKED", message: "Stripe key invalid", checkedAt: now };
+  return {
+    status: "UNVERIFIABLE",
+    message: `Stripe returned ${res.status}`,
+    checkedAt: now,
+  };
 }
 
 async function validateSlack(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://slack.com/api/auth.test", {
+  const res = await fetchWithTimeout("https://slack.com/api/auth.test", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
   });
-  const body = (await res.json()) as { ok: boolean };
-  if (body.ok)
+  if (!res.ok) {
     return {
-      status: "ACTIVE",
-      message: "Slack token verified",
+      status: "UNVERIFIABLE",
+      message: `Slack API returned HTTP ${res.status}`,
       checkedAt: now,
     };
-  return { status: "REVOKED", message: "Slack token invalid", checkedAt: now };
+  }
+  try {
+    const body = (await res.json()) as { ok: boolean };
+    if (body.ok)
+      return {
+        status: "ACTIVE",
+        message: "Slack token verified",
+        checkedAt: now,
+      };
+    return { status: "REVOKED", message: "Slack token invalid", checkedAt: now };
+  } catch {
+    return {
+      status: "UNVERIFIABLE",
+      message: "Slack API returned invalid JSON",
+      checkedAt: now,
+    };
+  }
 }
 
 async function validateAnthropic(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.anthropic.com/v1/models", {
+  const res = await fetchWithTimeout("https://api.anthropic.com/v1/models", {
     headers: { "x-api-key": token, "anthropic-version": "2023-06-01" },
   });
   if (res.status === 200)
@@ -211,7 +250,7 @@ async function validateOpenAI(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.openai.com/v1/models", {
+  const res = await fetchWithTimeout("https://api.openai.com/v1/models", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -229,7 +268,7 @@ async function validateHuggingFace(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://huggingface.co/api/whoami", {
+  const res = await fetchWithTimeout("https://huggingface.co/api/whoami", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -255,7 +294,7 @@ async function validateSendGrid(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.sendgrid.com/v3/user/profile", {
+  const res = await fetchWithTimeout("https://api.sendgrid.com/v3/user/profile", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -289,7 +328,7 @@ async function validateTwilio(
       message: "Invalid Twilio credential format",
       checkedAt: now,
     };
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://api.twilio.com/2010-04-01/Accounts/${sid}.json`,
     {
       headers: { Authorization: `Basic ${btoa(`${sid}:${authToken}`)}` },
@@ -356,7 +395,7 @@ async function validateDigitalOcean(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.digitalocean.com/v2/account", {
+  const res = await fetchWithTimeout("https://api.digitalocean.com/v2/account", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -390,7 +429,7 @@ async function validateMailchimp(
       message: "Cannot extract Mailchimp DC",
       checkedAt: now,
     };
-  const res = await fetch(`https://${dc}.api.mailchimp.com/3.0/ping`, {
+  const res = await fetchWithTimeout(`https://${dc}.api.mailchimp.com/3.0/ping`, {
     headers: { Authorization: `Basic ${btoa(`any:${token}`)}` },
   });
   if (res.status === 200)
@@ -427,7 +466,7 @@ async function validateSquare(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://connect.squareup.com/v2/locations", {
+  const res = await fetchWithTimeout("https://connect.squareup.com/v2/locations", {
     headers: {
       Authorization: `Bearer ${token}`,
       "Square-Version": "2024-01-17",
@@ -456,7 +495,7 @@ async function validateDatadog(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.datadoghq.com/api/v1/validate", {
+  const res = await fetchWithTimeout("https://api.datadoghq.com/api/v1/validate", {
     headers: { "DD-API-KEY": token },
   });
   if (res.status === 200)
@@ -482,7 +521,7 @@ async function validateNewRelic(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.newrelic.com/graphql", {
+  const res = await fetchWithTimeout("https://api.newrelic.com/graphql", {
     method: "POST",
     headers: { "API-Key": token, "Content-Type": "application/json" },
     body: JSON.stringify({ query: "{ actor { user { name } } }" }),
@@ -510,7 +549,7 @@ async function validateNpm(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://registry.npmjs.org/-/whoami", {
+  const res = await fetchWithTimeout("https://registry.npmjs.org/-/whoami", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -528,9 +567,6 @@ async function validatePyPI(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://pypi.org/pypi?:action=list_classifiers", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
   // PyPI tokens are hard to validate without publishing; check format
   if (/^pypi-[A-Za-z0-9_-]{50,}/.test(token)) {
     return {
@@ -550,7 +586,7 @@ async function validateDockerHub(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://hub.docker.com/v2/user/", {
+  const res = await fetchWithTimeout("https://hub.docker.com/v2/user/", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -609,31 +645,53 @@ async function validateCloudflare(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     "https://api.cloudflare.com/client/v4/user/tokens/verify",
     {
       headers: { Authorization: `Bearer ${token}` },
     },
   );
-  const body = (await res.json()) as { success: boolean };
-  if (body.success)
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      return {
+        status: "REVOKED",
+        message: "Cloudflare token invalid",
+        checkedAt: now,
+      };
+    }
     return {
-      status: "ACTIVE",
-      message: "Cloudflare token verified",
+      status: "UNVERIFIABLE",
+      message: `Cloudflare returned HTTP ${res.status}`,
       checkedAt: now,
     };
-  return {
-    status: "REVOKED",
-    message: "Cloudflare token invalid",
-    checkedAt: now,
-  };
+  }
+  try {
+    const body = (await res.json()) as { success: boolean };
+    if (body.success)
+      return {
+        status: "ACTIVE",
+        message: "Cloudflare token verified",
+        checkedAt: now,
+      };
+    return {
+      status: "REVOKED",
+      message: "Cloudflare token invalid",
+      checkedAt: now,
+    };
+  } catch {
+    return {
+      status: "UNVERIFIABLE",
+      message: "Cloudflare API returned invalid JSON",
+      checkedAt: now,
+    };
+  }
 }
 
 async function validateHeroku(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.heroku.com/account", {
+  const res = await fetchWithTimeout("https://api.heroku.com/account", {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/vnd.heroku+json; version=3",
@@ -662,7 +720,7 @@ async function validateNetlify(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.netlify.com/api/v1/user", {
+  const res = await fetchWithTimeout("https://api.netlify.com/api/v1/user", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -688,7 +746,7 @@ async function validateVercel(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.vercel.com/v2/user", {
+  const res = await fetchWithTimeout("https://api.vercel.com/v2/user", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -714,26 +772,48 @@ async function validateLinear(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.linear.app/graphql", {
+  const res = await fetchWithTimeout("https://api.linear.app/graphql", {
     method: "POST",
     headers: { Authorization: token, "Content-Type": "application/json" },
     body: JSON.stringify({ query: "{ viewer { id name } }" }),
   });
-  const body = (await res.json()) as { data?: unknown; errors?: unknown };
-  if (body.data)
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      return {
+        status: "REVOKED",
+        message: "Linear token invalid",
+        checkedAt: now,
+      };
+    }
     return {
-      status: "ACTIVE",
-      message: "Linear token verified",
+      status: "UNVERIFIABLE",
+      message: `Linear API returned HTTP ${res.status}`,
       checkedAt: now,
     };
-  return { status: "REVOKED", message: "Linear token invalid", checkedAt: now };
+  }
+  try {
+    const body = (await res.json()) as { data?: unknown; errors?: unknown };
+    if (body.data)
+      return {
+        status: "ACTIVE",
+        message: "Linear token verified",
+        checkedAt: now,
+      };
+    return { status: "REVOKED", message: "Linear token invalid", checkedAt: now };
+  } catch {
+    return {
+      status: "UNVERIFIABLE",
+      message: "Linear API returned invalid JSON",
+      checkedAt: now,
+    };
+  }
 }
 
 async function validateNotion(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.notion.com/v1/users/me", {
+  const res = await fetchWithTimeout("https://api.notion.com/v1/users/me", {
     headers: {
       Authorization: `Bearer ${token}`,
       "Notion-Version": "2022-06-28",
@@ -762,7 +842,7 @@ async function validateDiscord(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://discord.com/api/v10/users/@me", {
+  const res = await fetchWithTimeout("https://discord.com/api/v10/users/@me", {
     headers: { Authorization: `Bot ${token}` },
   });
   if (res.status === 200)
@@ -788,19 +868,41 @@ async function validateTelegram(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch(`https://api.telegram.org/bot${token}/getMe`);
-  const body = (await res.json()) as { ok: boolean };
-  if (body.ok)
+  const res = await fetchWithTimeout(`https://api.telegram.org/bot${token}/getMe`);
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 404) {
+      return {
+        status: "REVOKED",
+        message: "Telegram bot token invalid",
+        checkedAt: now,
+      };
+    }
     return {
-      status: "ACTIVE",
-      message: "Telegram bot token verified",
+      status: "UNVERIFIABLE",
+      message: `Telegram API returned HTTP ${res.status}`,
       checkedAt: now,
     };
-  return {
-    status: "REVOKED",
-    message: "Telegram bot token invalid",
-    checkedAt: now,
-  };
+  }
+  try {
+    const body = (await res.json()) as { ok: boolean };
+    if (body.ok)
+      return {
+        status: "ACTIVE",
+        message: "Telegram bot token verified",
+        checkedAt: now,
+      };
+    return {
+      status: "REVOKED",
+      message: "Telegram bot token invalid",
+      checkedAt: now,
+    };
+  } catch {
+    return {
+      status: "UNVERIFIABLE",
+      message: "Telegram API returned invalid JSON",
+      checkedAt: now,
+    };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -811,7 +913,7 @@ async function validateDropbox(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     "https://api.dropboxapi.com/2/users/get_current_account",
     {
       method: "POST",
@@ -842,7 +944,7 @@ async function validateTwitch(
   now: string,
 ): Promise<ValidationResult> {
   // Twitch app-access tokens are validated via /oauth2/validate (no Client-ID needed)
-  const res = await fetch("https://id.twitch.tv/oauth2/validate", {
+  const res = await fetchWithTimeout("https://id.twitch.tv/oauth2/validate", {
     headers: { Authorization: `OAuth ${token}` },
   });
   if (res.status === 200)
@@ -868,7 +970,7 @@ async function validateZoom(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.zoom.us/v2/users/me", {
+  const res = await fetchWithTimeout("https://api.zoom.us/v2/users/me", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -886,7 +988,7 @@ async function validateAsana(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://app.asana.com/api/1.0/users/me", {
+  const res = await fetchWithTimeout("https://app.asana.com/api/1.0/users/me", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -913,7 +1015,7 @@ async function validateMailgun(
   now: string,
 ): Promise<ValidationResult> {
   // Mailgun API keys use HTTP basic auth with user "api"
-  const res = await fetch("https://api.mailgun.net/v3/domains", {
+  const res = await fetchWithTimeout("https://api.mailgun.net/v3/domains", {
     headers: { Authorization: `Basic ${btoa(`api:${token}`)}` },
   });
   if (res.status === 200)
@@ -939,7 +1041,7 @@ async function validateSentry(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://sentry.io/api/0/projects/", {
+  const res = await fetchWithTimeout("https://sentry.io/api/0/projects/", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -965,7 +1067,7 @@ async function validateAirtable(
   token: string,
   now: string,
 ): Promise<ValidationResult> {
-  const res = await fetch("https://api.airtable.com/v0/meta/whoami", {
+  const res = await fetchWithTimeout("https://api.airtable.com/v0/meta/whoami", {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 200)
@@ -993,7 +1095,7 @@ async function validatePayPal(
 ): Promise<ValidationResult> {
   // PayPal access tokens are Bearer tokens issued by /v1/oauth2/token
   // We can verify via /v1/oauth2/token/userinfo
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     "https://api-m.paypal.com/v1/identity/oauth2/userinfo?schema=paypalv1.1",
     {
       headers: { Authorization: `Bearer ${token}` },

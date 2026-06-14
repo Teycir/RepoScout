@@ -14,7 +14,7 @@ const __dir      = dirname(__filename);
 
 // ─── KV Namespace stub ────────────────────────────────────────────────────────
 
-export class FakeKV implements KVNamespace {
+export class FakeKV {
   private store = new Map<string, string>();
 
   async get(key: string): Promise<string | null> {
@@ -96,7 +96,7 @@ export function createTestDb(): { db: D1Database; sqlite: Database.Database } {
   sqlite.pragma('journal_mode = WAL');
   sqlite.pragma('foreign_keys = ON');
 
-  const db: D1Database = {
+  const db: any = {
     prepare(query: string) { return makeStatement(sqlite, query); },
     dump()  { return Promise.resolve(new ArrayBuffer(0)); },
     batch<T>(stmts: D1PreparedStatement[]) {
@@ -105,7 +105,7 @@ export function createTestDb(): { db: D1Database; sqlite: Database.Database } {
     exec(query: string) { sqlite.exec(query); return Promise.resolve({ count: 0, duration: 0 }); },
   };
 
-  return { db, sqlite };
+  return { db: db as D1Database, sqlite };
 }
 
 export function applySchema(sqlite: Database.Database): void {
@@ -153,8 +153,8 @@ export class FakeAI {
 
 export interface TestEnv {
   DB: D1Database;
-  CACHE: FakeKV;
-  AI: FakeAI;
+  CACHE: KVNamespace;
+  AI: any;
   [key: string]: unknown;
 }
 
@@ -162,8 +162,8 @@ export function makeTestEnv(extraTokens: Record<string, string> = {}): TestEnv &
   const { db, sqlite } = makeDb();
   return {
     DB: db,
-    CACHE: new FakeKV(),
-    AI: new FakeAI(),
+    CACHE: new FakeKV() as unknown as KVNamespace,
+    AI: new FakeAI() as any,
     sqlite,
     ...extraTokens,
   };

@@ -27,6 +27,7 @@
     "fflate": "^0.8.2"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260613.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.0.0",
     "tsx": "^4.22.3",

@@ -3,6 +3,7 @@
 // Single source of truth for all domain types shared across scanner, validator, pipeline, and UI.
 
 import type { D1Database, KVNamespace, Ai } from './cloudflare-stubs.js';
+export { maskSecret } from './masking.js';
 
 // ---------------------------------------------------------------------------
 // Templates & Patterns
@@ -120,12 +121,7 @@ export function findingRiskScore(severity: Severity, verdict: Verdict): number {
   return severityWeight(severity) * verdictMultiplier(verdict);
 }
 
-export function maskSecret(secret: string): string {
-  if (secret.length <= 8) return '*'.repeat(secret.length);
-  const prefix = secret.slice(0, 4);
-  const suffix = secret.slice(-4);
-  return `${prefix}***${suffix}`;
-}
+
 
 export function severityBreakdown(matches: Match[]): SeverityBreakdown {
   const b: SeverityBreakdown = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };

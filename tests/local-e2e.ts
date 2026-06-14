@@ -24,7 +24,7 @@ import { createRequire }           from 'node:module';
 
 // better-sqlite3 lives in tests/node_modules (installed separately as native dep)
 const _require    = createRequire(import.meta.url);
-const Database    = _require('./node_modules/better-sqlite3') as typeof import('better-sqlite3').default;
+import Database from 'better-sqlite3';
 
 import { scanRepo }                                     from '../src/scan-worker/scanner.js';
 import { createScanValidationGraph, persistEvaluation } from '../src/scan-worker/pipeline.js';

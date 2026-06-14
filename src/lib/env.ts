@@ -106,4 +106,4 @@ export const CF_ACCOUNT_ID    = 'b1dea8ea21722d03763e3eff6ab8c5c1';
 export const CF_D1_DATABASE   = 'reposcout';
 export const CF_D1_ID         = '67fa825b-9f3e-478c-99d2-3e5cc1b0f3de';
 export const CF_KV_ID         = 'ed3c323de9cc48a4b332beec939597a4';
-export const CF_SUMMARY_MODEL = '@cf/meta/llama-3.1-8b-instruct';
+export const CF_SUMMARY_MODEL = '@cf/mistralai/mistral-small-3.1-24b-instruct';

@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const _require = createRequire(import.meta.url);
-const Database = _require('./node_modules/better-sqlite3') as typeof import('better-sqlite3').default;
+import Database from 'better-sqlite3';
 
 import { discoverRepos } from '../src/scan-worker/crawler.js';
 import { scanRepo } from '../src/scan-worker/scanner.js';

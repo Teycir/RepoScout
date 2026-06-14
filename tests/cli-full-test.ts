@@ -22,42 +22,13 @@
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
-import type BetterSqlite3 from 'better-sqlite3';
-
-const _require = createRequire(import.meta.url);
-const Database = _require('better-sqlite3') as typeof BetterSqlite3;
+import Database from 'better-sqlite3';
 
 import { discoverRepos }                                from '../src/scan-worker/crawler.js';
 import { scanRepo }                                     from '../src/scan-worker/scanner.js';
 import { createScanValidationGraph, persistEvaluation } from '../src/scan-worker/pipeline.js';
 
-// Cloudflare types
-type D1Database = {
-  prepare: (sql: string) => D1PreparedStatement;
-  dump: () => Promise<ArrayBuffer>;
-  batch: <T>(statements: D1PreparedStatement[]) => Promise<T[]>;
-  exec: (sql: string) => Promise<{ count: number; duration: number }>;
-};
 
-type D1PreparedStatement = {
-  bind: (...args: unknown[]) => D1PreparedStatement;
-  run: () => Promise<{ results: any[]; success: boolean; meta: any }>;
-  first: <T>() => Promise<T | null>;
-  all: <T>() => Promise<{ results: T[]; success: boolean; meta: any }>;
-};
-
-type KVNamespace = {
-  get: (key: string) => Promise<string | null>;
-  put: (key: string, value: string, opts?: { expirationTtl?: number }) => Promise<void>;
-  delete: (key: string) => Promise<void>;
-  list: () => Promise<{ keys: any[]; list_complete: boolean }>;
-  getWithMetadata: (key: string) => Promise<{ value: string | null; metadata: any }>;
-};
-
-type Ai = {
-  run: (model: string, input: any) => Promise<any>;
-};
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const ROOT  = join(__dir, '..');
@@ -92,7 +63,7 @@ function loadDotEnv(): Record<string, string> {
   return env;
 }
 
-function applySchema(db: BetterSqlite3.Database, sql: string) {
+function applySchema(db: Database.Database, sql: string) {
   const stripped = sql.replace(/--[^\n]*/g, ' ');
   for (const stmt of stripped.split(';').map(s => s.trim()).filter(Boolean)) {
     try {
@@ -103,7 +74,7 @@ function applySchema(db: BetterSqlite3.Database, sql: string) {
   }
 }
 
-function makeD1(db: BetterSqlite3.Database): D1Database {
+function makeD1(db: Database.Database): D1Database {
   function makeStmt(sql: string): D1PreparedStatement {
     let params: unknown[] = [];
     const stmt: any = {
@@ -126,7 +97,7 @@ function makeD1(db: BetterSqlite3.Database): D1Database {
   } as unknown as D1Database;
 }
 
-function makeKV(db: BetterSqlite3.Database): KVNamespace {
+function makeKV(db: Database.Database): KVNamespace {
   db.exec(`CREATE TABLE IF NOT EXISTS kv_store (k TEXT PRIMARY KEY, v TEXT NOT NULL, expires_at INTEGER)`);
   const getRow = db.prepare('SELECT v, expires_at FROM kv_store WHERE k = ?');
   const setRow = db.prepare(`INSERT INTO kv_store (k,v,expires_at) VALUES (?,?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v, expires_at=excluded.expires_at`);

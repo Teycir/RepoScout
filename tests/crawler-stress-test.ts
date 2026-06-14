@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const _require = createRequire(import.meta.url);
-const Database = _require('./node_modules/better-sqlite3') as typeof import('better-sqlite3').default;
+import Database from 'better-sqlite3';
 
 import { discoverRepos } from '../src/scan-worker/crawler.js';
 import { scanRepo } from '../src/scan-worker/scanner.js';
@@ -93,7 +93,7 @@ function makeKV(db: Database.Database): KVNamespace {
     async delete(key: string) { del.run(key); },
     async list() { return { keys: [], list_complete: true, cacheStatus: null }; },
     async getWithMetadata() { return { value: null, metadata: null, cacheStatus: null }; },
-  } as KVNamespace;
+  } as unknown as KVNamespace;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ async function main() {
   const rawEnv = loadDotEnv();
   const pats = Object.entries(rawEnv)
     .filter(([k]) => k.startsWith('GITHUB_TOKEN_'))
-    .map(([, v]) => v);
+    .map(([, v]) => v) as string[];
   
   if (!pats.length) {
     console.error('❌ No GitHub PATs found in .env');
@@ -160,7 +160,7 @@ async function main() {
   console.log(`Setting cursor to 24h ago: ${since24h}\n`);
 
   const crawlStart = Date.now();
-  const crawlerResult = await discoverRepos({ DB, CACHE }, pats[0]);
+  const crawlerResult = await discoverRepos({ DB, CACHE, AI: null as any }, pats[0] as string);
   const crawlDuration = Date.now() - crawlStart;
 
   console.log('\n📊 Crawler Results:');
@@ -204,7 +204,7 @@ async function main() {
       const scanStart = Date.now();
       
       try {
-        const result = await scanRepo(repo.owner, repo.name, pats[0], templates);
+        const result = await scanRepo(repo.owner, repo.name, pats[0] as string, templates);
         const scanTime = Date.now() - scanStart;
         totalScanTime += scanTime;
 
@@ -255,7 +255,7 @@ async function main() {
 
   console.log('Performance:');
   console.log(`  Total test time: ${(totalDuration / 1000).toFixed(1)}s`);
-  console.log(`  Discovery rate:  ${(crawlerResult.discovered / (crawlDuration / 1000)).toFixed(1)} repos/sec`);
+  console.log(`  Discovery rate:  ${(crawlerResult.reposDiscovered / (crawlDuration / 1000)).toFixed(1)} repos/sec`);
 
   console.log('\n✅ Verification Checks:');
   const checks = [

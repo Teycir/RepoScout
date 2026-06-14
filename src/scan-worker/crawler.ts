@@ -98,33 +98,42 @@ async function searchPage(
     page:     String(page),
   });
 
-  const res = await fetch(
-    `https://api.github.com/search/repositories?${params}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'User-Agent':  'RepoScout-Crawler/1.0',
-        Accept:        'application/vnd.github.v3+json',
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(
+      `https://api.github.com/search/repositories?${params}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'User-Agent':  'RepoScout-Crawler/1.0',
+          Accept:        'application/vnd.github.v3+json',
+        },
+        signal: controller.signal,
       },
-    },
-  );
+    );
+    clearTimeout(timeoutId);
 
-  const rawRemaining = res.headers.get('x-ratelimit-remaining');
-  const rawReset     = res.headers.get('x-ratelimit-reset');
-  const remaining    = rawRemaining != null ? parseInt(rawRemaining, 10) : 25;
-  const resetIso     = rawReset != null
-    ? new Date(parseInt(rawReset, 10) * 1000).toISOString()
-    : null;
+    const rawRemaining = res.headers.get('x-ratelimit-remaining');
+    const rawReset     = res.headers.get('x-ratelimit-reset');
+    const remaining    = rawRemaining != null ? parseInt(rawRemaining, 10) : 25;
+    const resetIso     = rawReset != null
+      ? new Date(parseInt(rawReset, 10) * 1000).toISOString()
+      : null;
 
-  if (res.status === 403 || res.status === 429) {
-    throw new Error(`GitHub Search rate-limited (HTTP ${res.status})`);
+    if (res.status === 403 || res.status === 429) {
+      throw new Error(`GitHub Search rate-limited (HTTP ${res.status})`);
+    }
+    if (!res.ok) {
+      throw new Error(`GitHub Search HTTP ${res.status}`);
+    }
+
+    const body = await res.json() as GitHubSearchResponse;
+    return { items: body.items ?? [], remaining, resetIso };
+  } catch (e) {
+    clearTimeout(timeoutId);
+    throw e;
   }
-  if (!res.ok) {
-    throw new Error(`GitHub Search HTTP ${res.status}`);
-  }
-
-  const body = await res.json() as GitHubSearchResponse;
-  return { items: body.items ?? [], remaining, resetIso };
 }
 
 // ---------------------------------------------------------------------------
@@ -132,7 +141,7 @@ async function searchPage(
 // ---------------------------------------------------------------------------
 
 export async function discoverRepos(
-  env: Env & Record<string, string>,
+  env: Env,
   rawToken: string,
 ): Promise<CrawlerResult> {
   const crawlerRunId = crypto.randomUUID();
@@ -177,7 +186,7 @@ export async function discoverRepos(
   // ------------------------------------------------------------------
   // 3. Page through GitHub Search
   // ------------------------------------------------------------------
-  const query        = buildSearchQuery(since.slice(0, 10)); // YYYY-MM-DD is enough
+  const query        = buildSearchQuery(since.slice(0, 19) + 'Z');
   const allItems: GitHubSearchItem[] = [];
 
   for (let page = 1; page <= MAX_SEARCH_PAGES; page++) {

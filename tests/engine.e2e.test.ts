@@ -622,7 +622,7 @@ describe('6. Pipeline – heuristic filter', () => {
 
 describe('7. Pipeline – LLM classifier (FakeAI)', () => {
   // helper: build a standard real-looking state for pipeline tests
-  function makeState(override: Record<string, unknown> = {}) {
+  function makeState(override: Record<string, unknown> = {}): any {
     return {
       findingId:           'test-llm-base',
       repoName:            'owner/repo',
